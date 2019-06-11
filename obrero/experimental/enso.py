@@ -67,7 +67,7 @@ def get_oni(data=None, years=slice(None)):
         YR = data.time.dt.year.values
 
         # get anomalies
-        annino = analysis.anomalies(nino)
+        annino = analysis.get_anomalies(nino)
 
         # now average them to time series
         avnino = spatial.area_average(annino, method='area')
