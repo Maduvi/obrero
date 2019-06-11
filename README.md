@@ -2,6 +2,16 @@
 
 obrero is a set of Python 3.x functions to ease production of high-quality plots in climate modeling experiments. It helps our coding to be less cluttered. Scripts that used to have over 100 lines, become 20 lines long using obrero functions. Under the hood it is doing all kinds of things with [xarray](http://xarray.pydata.org/en/stable/) and [numpy](http://www.numpy.org/) objects. It also makes use of great [pandas](https://pandas.pydata.org/), [scipy](https://www.scipy.org/) and [cf_units](https://github.com/SciTools/cf-units) libraries for dealing with dates and other complex tasks like hypothesis testing. All plotting is done using [matplotlib](https://matplotlib.org/) and [cartopy](https://scitools.org.uk/cartopy/docs/latest/). Currently obrero is being used in studies that involve the El Niño--Southern Oscillation (ENSO) and maximum climatological water deficit (MCWD) as presented in Malhi et al. (2009). So there are two experimental modules for each of these subjects. This is all just an academic excercise.
 
+## Installation
+Currently this software is not hosted anywhere else but here. So there is no conda-forge or PyPi repository to use. So to install this software you must download this repository and execute in a command line, inside of this repository, the following:
+
+```bash
+$ sudo python setup.py install
+```
+
+Omit the `sudo` part if you are not installing obrero systemwide.
+
+
 ## Modules
 Basic modules include input/output functions, calendar related, spatial and time averaging and processing and some other utilities. As well as a plotting module. All of these are very basic and are just to ease our scripting. There are three very interesting modules however in the experimental section:
 
