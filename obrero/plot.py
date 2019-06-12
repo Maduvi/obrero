@@ -935,7 +935,7 @@ def ortho_rotation(data, spec, wpx=1920, hpx=1080, lon0=0, dg=1,
             spec['proj'] = proj
 
             # add date to title
-            date = cal.get_date(da.time.values)
+            date = cal.get_dates(da.time.values)
             spec['title'] = date.strftime('%Y-%b')
 
             # plot
