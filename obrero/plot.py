@@ -610,7 +610,7 @@ def plot_glacier(glacier, method='mesh', wmm=180, hmm=90, save=None,
 
     # specifications
     sp = dict(method='mesh', levels=[0, 0.5, 1], cticks=[0.25, 0.75],
-              cm=ListedColormap(['Aqua', 'Magenta']), cbstr='',
+              cm=ListedColormap(['Aqua', 'Magenta']), cbstring='',
               title=title, axes=axes)
 
     axes, cb = plot_global_contour(glacier, **sp)
