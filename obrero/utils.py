@@ -123,7 +123,7 @@ def mask_land_ocean(data, land_mask, ocean=False):
     if ocean is True:
         maskval = np.ma.masked_array(values, tmask)
     else:
-        maskval = np.ma.masked_array(values, tmask is False)
+        maskval = np.ma.masked_array(values, tmask == False) # noqa E712
 
     # replace values
     newdata = data.copy()
