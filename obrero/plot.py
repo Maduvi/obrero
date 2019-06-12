@@ -20,24 +20,6 @@ from cartopy.crs import Orthographic as ort
 from . import cal
 from . import utils
 
-# plot settings
-mpl.rc('savefig', dpi=300)
-mpl.rc('figure', autolayout=False)
-mpl.rc('font', family='sans-serif')
-mpl.rc('font', size=7)
-mpl.rc('axes', titlesize=8)
-mpl.rc('axes', labelsize=7)
-mpl.rc('legend', fontsize=7)
-mpl.rc('axes', unicode_minus=False)
-mpl.rc('text', usetex=True)
-mpl.rc('text.latex', unicode=True)
-mpl.rc('text.latex', preamble=[r'\usepackage{helvet}',
-                               r'\usepackage{sansmath}',
-                               r'\usepackage{subdepth}',
-                               r'\usepackage{type1cm}',
-                               r'\usepackage{gensymb}',
-                               r'\sansmath'])
-
 # avoid warning about registering pandas converters
 register_matplotlib_converters()
 
@@ -329,6 +311,24 @@ def plot_global_contour(data, method='filled', cm='jet', axes=None,
     and `plot_glacier`.
     """  # noqa
 
+    # plot settings
+    mpl.rc('savefig', dpi=300)
+    mpl.rc('figure', autolayout=False)
+    mpl.rc('font', family='sans-serif')
+    mpl.rc('font', size=7)
+    mpl.rc('axes', titlesize=8)
+    mpl.rc('axes', labelsize=7)
+    mpl.rc('legend', fontsize=7)
+    mpl.rc('axes', unicode_minus=False)
+    mpl.rc('text', usetex=True)
+    mpl.rc('text.latex', unicode=True)
+    mpl.rc('text.latex', preamble=[r'\usepackage{helvet}',
+                                   r'\usepackage{sansmath}',
+                                   r'\usepackage{subdepth}',
+                                   r'\usepackage{type1cm}',
+                                   r'\usepackage{gensymb}',
+                                   r'\sansmath'])
+
     # check it is 2D
     if len(data.dims) > 2:
         msg = 'we can only handle 2D plots'
@@ -475,7 +475,7 @@ def get_cyclic_values(data):
 
     # new lon is add distance to last item
     newlon[-1] = lon[-1] + xhres
-    
+
     # if lon[-1] > 180.0:
     #     newlon[-1] = 360.0
     # else:
