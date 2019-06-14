@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib.cm import get_cmap
 from matplotlib.colors import BoundaryNorm, ListedColormap
 from matplotlib.ticker import FixedLocator, FuncFormatter
+import matplotlib.animation as animation
 
 from cartopy.crs import Mollweide as moll
 from cartopy.crs import PlateCarree as pcar
@@ -72,6 +73,38 @@ def _no_hyphen(x, pos):
         rv = re.sub('$-$', r'\mhyphen', rv)
 
     return rv
+
+
+def plot_settings():
+    """Helper to set up things we like."""
+
+    # plot settings
+    mpl.rc('savefig', dpi=300)
+    mpl.rc('figure', autolayout=False)
+    mpl.rc('font', family='sans-serif')
+    mpl.rc('font', size=7)
+    mpl.rc('axes', titlesize=8)
+    mpl.rc('axes', labelsize=7)
+    mpl.rc('legend', fontsize=7)
+    mpl.rc('axes', unicode_minus=False)
+    mpl.rc('text', usetex=True)
+    mpl.rc('text.latex', unicode=True)
+    mpl.rc('text.latex', preamble=[r'\usepackage{helvet}',
+                                   r'\usepackage{sansmath}',
+                                   r'\usepackage{subdepth}',
+                                   r'\usepackage{type1cm}',
+                                   r'\usepackage{gensymb}',
+                                   r'\sansmath'])
+
+
+def add_gridlines(axes):
+    """Helper to add same gridlines to maps."""
+    gl = axes.gridlines(crs=pcar(), linewidth=1, linestyle='--',
+                        alpha=0.5, color='black')
+
+    # specify gridlines locations
+    gl.xlocator = FixedLocator([-180, -90, 0, 90, 180])
+    gl.ylocator = FixedLocator([-90, -60, -30, 0, 30, 60, 90])
 
 
 def create_save_dir(save_dir):
@@ -233,6 +266,65 @@ def create_clev(data, minv=None, maxv=None, nlevels=None):
     return clevels
 
 
+def get_cyclic_values(data):
+    """Add another column to data array with same values as first but
+    with an additional longitude coordinate, i.e. make it cyclic.
+    This returns a numpy.ndarray array of values, not another xarray.
+
+    Parameters
+    ----------
+    data: xarray.DataArray
+        Input must have named `longitude` and `latitude` coordinates.
+
+    Returns
+    -------
+    Tuple object with the following contents:
+
+        (new_values, new_longitude_values)
+
+    Both of these objects ar numpy.ndarray. If input had shape lat. x
+    lon. 32 x 64, then `new_values` has shape 32 x 65, and
+    `new_longitude_values` has a size of 65.
+
+    Note
+    ----
+    Longitudes will be cyclic only if data are cyclic. Otherwise the
+    last coordinate value will not be the same as first.
+    """  # noqa
+
+    # get values and longitudes
+    val = data.values
+    lon = data.longitude.values
+
+    # get shape and add 1 more in right most coord
+    shp = list(data.shape)
+    shp[-1] += 1
+
+    # create new empty arrays with extra column
+    newval = np.zeros(shp)
+    newlon = np.zeros(shp[-1])
+
+    # copy all values except last column
+    newval[..., :-1] = val
+    newlon[:-1] = lon
+
+    # repeat same values as first
+    newval[..., -1] = val[..., 0]
+
+    # get horizontal distance
+    xhres = np.mean(np.diff(lon))
+
+    # new lon is add distance to last item
+    newlon[-1] = lon[-1] + xhres
+
+    # if lon[-1] > 180.0:
+    #     newlon[-1] = 360.0
+    # else:
+    #     newlon[-1] = 180.0
+
+    return (newval, newlon)
+
+
 def plot_global_contour(data, method='filled', cm='jet', axes=None,
                         proj=moll(), lon0=0, extend='neither',
                         levels=None, minv=None, maxv=None,
@@ -312,22 +404,7 @@ def plot_global_contour(data, method='filled', cm='jet', axes=None,
     """  # noqa
 
     # plot settings
-    mpl.rc('savefig', dpi=300)
-    mpl.rc('figure', autolayout=False)
-    mpl.rc('font', family='sans-serif')
-    mpl.rc('font', size=7)
-    mpl.rc('axes', titlesize=8)
-    mpl.rc('axes', labelsize=7)
-    mpl.rc('legend', fontsize=7)
-    mpl.rc('axes', unicode_minus=False)
-    mpl.rc('text', usetex=True)
-    mpl.rc('text.latex', unicode=True)
-    mpl.rc('text.latex', preamble=[r'\usepackage{helvet}',
-                                   r'\usepackage{sansmath}',
-                                   r'\usepackage{subdepth}',
-                                   r'\usepackage{type1cm}',
-                                   r'\usepackage{gensymb}',
-                                   r'\sansmath'])
+    plot_settings()
 
     # check it is 2D
     if len(data.dims) > 2:
@@ -353,11 +430,17 @@ def plot_global_contour(data, method='filled', cm='jet', axes=None,
     if axes is None:
         axes = plt.axes(projection=proj)
 
+    # guess ticks for colorbar
+    if cticks is None:
+        cticks = levels[1:-1:2]
+
     if method == 'filled':
         # plot filled countour with specs
         fmap = axes.contourf(clon, lat, cval, levels=levels, cmap=cm,
                              transform=pcar(), extend=extend)
-
+        cb = plt.colorbar(fmap, orientation='horizontal', pad=0.05,
+                          format=FuncFormatter(_no_hyphen),
+                          shrink=0.75, ax=axes, ticks=cticks)
     elif method == 'mesh':
 
         # fix coords
@@ -368,6 +451,10 @@ def plot_global_contour(data, method='filled', cm='jet', axes=None,
         cnorm = BoundaryNorm(levels, cmap.N)
         fmap = axes.pcolormesh(corlon, corlat, cval, cmap=cmap,
                                norm=cnorm, transform=pcar())
+        cb = plt.colorbar(fmap, orientation='horizontal', pad=0.05,
+                          format=FuncFormatter(_no_hyphen),
+                          shrink=0.75, ax=axes, extend=extend,
+                          ticks=cticks)
     else:
         msg = 'method can only be \'filled\' or \'mesh\''
         raise ValueError(msg)
@@ -379,27 +466,7 @@ def plot_global_contour(data, method='filled', cm='jet', axes=None,
     axes.set_global()
 
     # add gridlines
-    gl = axes.gridlines(crs=pcar(), linewidth=1, linestyle='--',
-                        alpha=0.5, color='black')
-
-    # specify gridlines locations
-    gl.xlocator = FixedLocator([-180, -90, 0, 90, 180])
-    gl.ylocator = FixedLocator([-90, -60, -30, 0, 30, 60, 90])
-
-    # guess ticks for colorbar
-    if cticks is None:
-        cticks = levels[1:-1:2]
-
-    # add colorbar
-    if method == 'filled':
-        cb = plt.colorbar(fmap, orientation='horizontal', pad=0.05,
-                          format=FuncFormatter(_no_hyphen),
-                          shrink=0.75, ax=axes, ticks=cticks)
-    else:
-        cb = plt.colorbar(fmap, orientation='horizontal', pad=0.05,
-                          format=FuncFormatter(_no_hyphen),
-                          shrink=0.75, ax=axes, extend=extend,
-                          ticks=cticks)
+    add_gridlines(axes)
 
     # add colorbar title
     if cbstring is None:
@@ -423,65 +490,6 @@ def plot_global_contour(data, method='filled', cm='jet', axes=None,
                   bbox=props)
 
     return (axes, cb)
-
-
-def get_cyclic_values(data):
-    """Add another column to data array with same values as first but
-    with an additional longitude coordinate, i.e. make it cyclic.
-    This returns a numpy.ndarray array of values, not another xarray.
-
-    Parameters
-    ----------
-    data: xarray.DataArray
-        Input must have named `longitude` and `latitude` coordinates.
-
-    Returns
-    -------
-    Tuple object with the following contents:
-
-        (new_values, new_longitude_values)
-
-    Both of these objects ar numpy.ndarray. If input had shape lat. x
-    lon. 32 x 64, then `new_values` has shape 32 x 65, and
-    `new_longitude_values` has a size of 65.
-
-    Note
-    ----
-    Longitudes will be cyclic only if data are cyclic. Otherwise the
-    last coordinate value will not be the same as first.
-    """  # noqa
-
-    # get values and longitudes
-    val = data.values
-    lon = data.longitude.values
-
-    # get sizes
-    nlat = data.latitude.size
-    mlon = data.longitude.size
-
-    # create new empty arrays with extra column
-    newval = np.zeros((nlat, mlon + 1))
-    newlon = np.zeros(mlon + 1)
-
-    # copy all values except last column
-    newval[:, :-1] = val
-    newlon[:-1] = lon
-
-    # repeat same values as first
-    newval[:, -1] = val[:, 0]
-
-    # get horizontal distance
-    xhres = np.mean(np.diff(lon))
-
-    # new lon is add distance to last item
-    newlon[-1] = lon[-1] + xhres
-
-    # if lon[-1] > 180.0:
-    #     newlon[-1] = 360.0
-    # else:
-    #     newlon[-1] = 180.0
-
-    return (newval, newlon)
 
 
 def plot_landsea(land_mask, method='mesh', wmm=180, hmm=90, axes=None,
@@ -1028,6 +1036,9 @@ def oni_lineplot(data, names=None, colors=None, styles=None,
     matplotlib.axes.Axes with plot attached.
     """  # noqa
 
+    # plot settings
+    plot_settings()
+
     if isinstance(data, list):
         ndata = len(data)
         iyear = data[0].index[0]
@@ -1165,6 +1176,9 @@ def plot_zonal_mean(data, style=None, axes=None, xticks=None,
     -------
     matplotlib.axes.Axes with plot attached.
     """  # noqa
+
+    # plot settings
+    plot_settings()
 
     if isinstance(data, list):
         ndata = len(data)
@@ -1329,3 +1343,116 @@ def panel_zonal_mean(dlist, slist=None, wmm=180, hmm=90, save=None,
     save_func(save, transparent)
 
     return fig
+
+
+def animate_global_contour(data, wmm=80, hmm=65, proj=moll(),
+                           lon0=0, extend='neither', cm='jet',
+                           levels=None, minv=None, maxv=None,
+                           nlevels=None, cbstring=None,
+                           cticks=None, name=None, method='filled'):
+    """Create animation."""
+
+    # plot settings
+    plot_settings()
+    mpl.rcParams["animation.html"] = "jshtml"
+
+    # get contour levels
+    if levels is None:
+        levels = create_clev(data, minv, maxv, nlevels)
+
+    # choose projection if given lon0
+    if lon0 != 0.0 and proj == moll():
+        proj = moll(central_longitude=lon0)
+    elif lon0 != 0.0:
+        msg = 'lon0 argument only works if no projection provided'
+        warnings.warn(msg)
+
+    # get dates
+    dates = cal.get_dates(data.time.values)
+
+    # get cyclical values and coords
+    cval, clon = get_cyclic_values(data)
+    lat = data.latitude.values
+
+    def init():
+        """Needed only to include colorbar in animation."""
+        if method == 'filled':
+            # plot filled countour with specs
+            fmap = axes.contourf(clon, lat, cval[0], levels=levels,
+                                 cmap=cm, transform=pcar(),
+                                 extend=extend)
+            fig.colorbar(fmap, orientation='horizontal', pad=0.05,
+                         format=FuncFormatter(_no_hyphen),
+                         shrink=0.75, ticks=cticks)
+        elif method == 'mesh':
+            # fix coords
+            corlon, corlat = corner_coords(clon, lat)
+
+            # plot grid cells with specs
+            cmap = get_cmap(cm, len(levels))
+            cnorm = BoundaryNorm(levels, cmap.N)
+            fmap = axes.pcolormesh(corlon, corlat, cval[0], cmap=cmap,
+                                   norm=cnorm, transform=pcar())
+            fig.colorbar(fmap, orientation='horizontal', pad=0.05,
+                         format=FuncFormatter(_no_hyphen),
+                         shrink=0.75, extend=extend,
+                         ticks=cticks)
+        else:
+            msg = 'method can only be \'filled\' or \'mesh\''
+            raise ValueError(msg)
+
+        # add plot title
+        dstr = dates[0].strftime('%Y-%b')
+        title = r'\texttt{' + dstr + r'}'
+        axes.set_title(title)
+
+        # maximize
+        fig.tight_layout()
+
+        return axes.cla(),
+
+    def animate(i):
+        """Create iterable of artists for animation."""
+
+        # clear axes
+        axes.cla()
+
+        # add shorelines
+        axes.coastlines(resolution='110m')
+
+        # set global
+        axes.set_global()
+
+        # add gridlines
+        add_gridlines(axes)
+
+        if method == 'filled':
+            axes.contourf(clon, lat, cval[i], levels=levels, cmap=cm,
+                          transform=pcar(), extend=extend)
+        elif method == 'mesh':
+            # fix coords
+            corlon, corlat = corner_coords(clon, lat)
+
+            # plot grid cells with specs
+            cmap = get_cmap(cm, len(levels))
+            cnorm = BoundaryNorm(levels, cmap.N)
+            axes.pcolormesh(corlon, corlat, cval[i], cmap=cmap,
+                            norm=cnorm, transform=pcar())
+        else:
+            msg = 'method can only be \'filled\' or \'mesh\''
+            raise ValueError(msg)
+
+        # add plot title
+        dstr = dates[i].strftime('%Y-%b')
+        title = r'\texttt{' + dstr + r'}'
+        axes.set_title(title)
+
+    # create figure and subplot
+    fig = plt.figure(figsize=(wmm / 25.4, hmm / 25.4))
+    axes = fig.add_subplot(111, projection=proj)
+
+    # animation object
+    anim = animation.FuncAnimation(fig, animate, init_func=init,
+                                   frames=data.time.size, repeat=False)
+
+    return anim
