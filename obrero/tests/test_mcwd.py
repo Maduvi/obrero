@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from obrero import mcwd
+from obrero.experimental import mcwd
 
 from .test_io import *
 

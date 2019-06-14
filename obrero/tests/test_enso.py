@@ -1,5 +1,5 @@
 from obrero import io
-from obrero import enso
+from obrero.experimental import enso
 
 from .test_io import *
 

@@ -1,12 +1,8 @@
 # flake8: noqa
 
-from .experimental import mcwd, enso, video_udea
-
 from .io import *
 
 from .utils import *
-
-from .plot import *
 
 from .tex import *
 
@@ -15,6 +11,7 @@ from .cal import *
 from .spatial import *
 
 from .analysis import *
+
 
 __title__ = 'obrero'
 __author__ = 'Mateo Duque-Villegas'

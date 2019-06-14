@@ -1,6 +1,8 @@
 import pandas as pd
 
-from obrero import enso
+from obrero.experimental import enso
+
+__all__ = ['oni_to_tabular']
 
 
 def oni_to_tabular(dfoni, texname):
