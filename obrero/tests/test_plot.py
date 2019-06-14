@@ -36,9 +36,17 @@ def test_plot_global_contour():
     plot.plot_global_contour(data, minv=0, maxv=1)
 
 
-def test_get_cyclic_values():
+def test_get_cyclic_values_3d():
+    data = create_3d_data(1)
+    actual, dumm = plot.get_cyclic_values(data)
+    expected = np.ones((24, 5, 6)) 
+    assert_allclose(actual, expected)
+
+
+def test_get_cyclic_values_2d():
     data = create_2d_data(1)
     actual, dumm = plot.get_cyclic_values(data)
-    expected = np.ones((5, 6))
+    expected = np.ones((5, 6)) 
     assert_allclose(actual, expected)
+
     

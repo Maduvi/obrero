@@ -539,12 +539,7 @@ def plot_mcwd_composite(composite, wmm=100, hmm=80, axes=None,
     axes.set_global()
 
     # add gridlines
-    gl = axes.gridlines(crs=oplot.pcar(), linewidth=1, linestyle='--',
-                        alpha=0.5, color='black')
-
-    # specify gridlines locations
-    gl.xlocator = oplot.FixedLocator([-180, -90, 0, 90, 180])
-    gl.ylocator = oplot.FixedLocator([-90, -60, -30, 0, 30, 60, 90])
+    oplot.add_gridlines(axes)
 
     # fix coords
     corlon, corlat = oplot.corner_coords(clon, lat)
