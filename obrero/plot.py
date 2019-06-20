@@ -1345,16 +1345,84 @@ def panel_zonal_mean(dlist, slist=None, wmm=180, hmm=90, save=None,
     return fig
 
 
-def animate_global_contour(data, wmm=80, hmm=65, proj=moll(),
+def animate_global_contour(data,  method='filled',
+                           wmm=80, hmm=65, proj=moll(),
                            lon0=0, extend='neither', cm='jet',
                            levels=None, minv=None, maxv=None,
                            nlevels=None, cbstring=None,
-                           cticks=None, name=None, method='filled'):
-    """Create animation."""
+                           cticks=None, name=None):
+    """Create an animation for a Jupyter Notebook.
+
+    This function is intended to be used within Jupyter Notebooks to
+    include an animation of the contents of an array in a
+    cell. Outside the scope of a Notebook, i.e. in a script, this
+    function can be used to create files such as MP4 videos or
+    GIFs. It returns an animation object from matplotlib which has the
+    method `.save()` to be able to create videos or GIFs. Arguments
+    are very similar to those of `plot_global_contour`. It also has
+    some sizing options in case the user wants to save images.
+
+    Parameters
+    ----------
+    data: xarray.DataArray
+        Input must be 2D. It must have named coordinates `latitude`
+        and `longitude`.
+    method: str, optional
+        It can be either 'filled' to use matplotlib's `contourf`
+        function, or 'mesh' which uses matplotlib's `pcolormesh`.
+        Default is to plot filled contours.
+    wmm: float, optional
+        Width of the figure to plot in units of mm. Default is 80 mm.
+    hmm: float, optional
+        Height of the figure to plot in units of mm. Default is 65 mm.
+    proj: cartopy.crs.Projection, optional
+        Map projection to be used to create the axes if not
+        provided. By default we use the Mollweide projection.
+    lon0: float, optional
+        Central longitude to create the projection in the axes. By
+        default the central longitudes is the Greenwich meridian. This
+        argument is only meaningfull for the default projection which 
+        is Mollweide. Otherwise it is unused.
+    extend: str, optional
+        Whether to have pointing arrows at the ends of the
+        colorbar. It can be 'neither', to not use arrows but have 
+        blunt ends, 'max' to only have an arrow at the maximum end of
+        the colorbar, 'min', and 'both'.
+    cm: str, optional
+        Colormap to be used. By default is Jet colormap.
+    levels: list or numpy.ndarray, optional
+        Contour levels can be specified with this keyword. Otherwise
+        you can let this function create the contour levels using
+        keywords `minv`, `maxv`, and `nlevels`.
+    minv: float, optional
+        Minimum value for contour levels in colorbar. If not set, the
+        minimum value found in the data array will be used.
+    maxv: float, optional
+        Maximum value for contour levels in colorbar. If not set, the
+        maximum value found in the data array will be used.
+    nlevels: int, optional
+        Number of levels for contour coloring. If not used, default is
+        10 contour levels.
+    cbstring: str, optional
+        Title for the colorbar. If none provided, it will try to use
+        `units` attribute in data array if is defined.
+    cticks: list or numpy.ndarray, optional
+        These ticks are for the colorbar, in case you want particular
+        ones. By default the function will try to use the "best ones",
+        choosing values every 2 contour levels.
+    name: str, optional
+        Whether to place a small rectangular label in the bottom right
+        corner of the map plot with a name for it.
+
+    Returns
+    -------
+    A matplotlib.animation.FuncAnimation object that has the method
+    `.save()` available.
+    """  # noqa
 
     # plot settings
     plot_settings()
-    mpl.rcParams["animation.html"] = "jshtml"
+    mpl.rcParams["animation.html"] = "html5"
 
     # get contour levels
     if levels is None:
@@ -1374,6 +1442,13 @@ def animate_global_contour(data, wmm=80, hmm=65, proj=moll(),
     cval, clon = get_cyclic_values(data)
     lat = data.latitude.values
 
+    # guess colorbar title if none
+    if cbstring is None:
+        try:
+            cbstring = data.units
+        except AttributeError:
+            cbstring = ''
+
     def init():
         """Needed only to include colorbar in animation."""
         if method == 'filled':
@@ -1381,9 +1456,9 @@ def animate_global_contour(data, wmm=80, hmm=65, proj=moll(),
             fmap = axes.contourf(clon, lat, cval[0], levels=levels,
                                  cmap=cm, transform=pcar(),
                                  extend=extend)
-            fig.colorbar(fmap, orientation='horizontal', pad=0.05,
-                         format=FuncFormatter(_no_hyphen),
-                         shrink=0.75, ticks=cticks)
+            cb = fig.colorbar(fmap, orientation='horizontal', pad=0.05,
+                              format=FuncFormatter(_no_hyphen),
+                              shrink=0.75, ticks=cticks)
         elif method == 'mesh':
             # fix coords
             corlon, corlat = corner_coords(clon, lat)
@@ -1393,10 +1468,10 @@ def animate_global_contour(data, wmm=80, hmm=65, proj=moll(),
             cnorm = BoundaryNorm(levels, cmap.N)
             fmap = axes.pcolormesh(corlon, corlat, cval[0], cmap=cmap,
                                    norm=cnorm, transform=pcar())
-            fig.colorbar(fmap, orientation='horizontal', pad=0.05,
-                         format=FuncFormatter(_no_hyphen),
-                         shrink=0.75, extend=extend,
-                         ticks=cticks)
+            cb = fig.colorbar(fmap, orientation='horizontal', pad=0.05,
+                              format=FuncFormatter(_no_hyphen),
+                              shrink=0.75, extend=extend,
+                              ticks=cticks)
         else:
             msg = 'method can only be \'filled\' or \'mesh\''
             raise ValueError(msg)
@@ -1406,10 +1481,13 @@ def animate_global_contour(data, wmm=80, hmm=65, proj=moll(),
         title = r'\texttt{' + dstr + r'}'
         axes.set_title(title)
 
+        # add colorbar title
+        cb.set_label(cbstring)
+
         # maximize
         fig.tight_layout()
 
-        return axes.cla(),
+        return (axes.cla(),)
 
     def animate(i):
         """Create iterable of artists for animation."""
@@ -1452,7 +1530,10 @@ def animate_global_contour(data, wmm=80, hmm=65, proj=moll(),
     axes = fig.add_subplot(111, projection=proj)
 
     # animation object
+    nfr = data.time.size
     anim = animation.FuncAnimation(fig, animate, init_func=init,
-                                   frames=data.time.size, repeat=False)
+                                   frames=nfr, repeat=False)
+
+    plt.close()
 
     return anim
