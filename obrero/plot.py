@@ -1125,7 +1125,7 @@ def plot_zonal_mean(data, style=None, axes=None, xticks=None,
     ----------
     data: xarray.DataArray or list of xarray.DataArray
         Input data can be a list of several xarray arrays. They all
-        must have only 1 dimension: latitiude, which must be a named
+        must have only 1 dimension: latitude, which must be a named
         coordinate as well.
     style: dict or list of dict, optional
         Here the user can input a style dictionary using
@@ -1442,6 +1442,10 @@ def animate_global_contour(data,  method='filled',
     cval, clon = get_cyclic_values(data)
     lat = data.latitude.values
 
+    # guess ticks for colorbar
+    if cticks is None:
+        cticks = levels[1:-1:2]
+
     # guess colorbar title if none
     if cbstring is None:
         try:
@@ -1537,3 +1541,278 @@ def animate_global_contour(data,  method='filled',
     plt.close()
 
     return anim
+
+
+def plot_pressure_latitude(data, method='filled', axes=None, wmm=80,
+                           hmm=80, levels=None, minv=None, maxv=None,
+                           nlevels=None, cm='jet', extend='neither',
+                           cticks=None, xlim=[-90, 90], xticks=None,
+                           xticklabels=None, xminor=None,
+                           regular_axis=False, title='',
+                           cbstring=None, save=None,
+                           transparent=False):
+    """Create a pressure versus latitude contour plot.
+
+    Level units must be in hPa.
+
+    Parameters
+    ----------
+    data: xarray.DataArray
+        Input must have two dimensions: level and latitude.
+    method: str, optional
+        It can be either 'filled' to use matplotlib's `contourf`
+        function, or 'mesh' which uses matplotlib's `pcolormesh`.
+        Default is to plot filled contours.
+    wmm: float, optional
+        Width of the figure to plot in units of mm. Default is 80 mm.
+    hmm: float, optional
+        Height of the figure to plot in units of mm. Default is 80 mm.
+    levels: list or numpy.ndarray, optional
+        Contour levels can be specified with this keyword. Otherwise
+        you can let this function create the contour levels using
+        keywords `minv`, `maxv`, and `nlevels`.
+    minv: float, optional
+        Minimum value for contour levels in colorbar. If not set, the
+        minimum value found in the data array will be used.
+    maxv: float, optional
+        Maximum value for contour levels in colorbar. If not set, the
+        maximum value found in the data array will be used.
+    nlevels: int, optional
+        Number of levels for contour coloring. If not used, default is
+        10 contour levels.
+    cm: str, optional
+        Colormap to be used. By default is Jet colormap.
+    extend: str, optional
+        Whether to have pointing arrows at the ends of the
+        colorbar. It can be 'neither', to not use arrows but have 
+        blunt ends, 'max' to only have an arrow at the maximum end of
+        the colorbar, 'min', and 'both'.
+    cticks: list or numpy.ndarray, optional
+        These ticks are for the colorbar, in case you want particular
+        ones. By default the function will try to use the "best ones",
+        choosing values every 2 contour levels.
+    xlim: list, optional
+        To specify the limits in the x axis. Default is [-90, 90].
+    xticks: list or numpy.ndarray, optional
+        In case the user wants different latitudes in the x
+        axis. Default is [-80, -40, 0, 40, 80].
+    xticklabels: list, optional
+        List of strings to be used if the user has set different
+        `xticks`. It really only makes sense to use this setting along
+        with xticks, but it is not coded this way in case the user
+        wants to change the default xticks labels.
+    xminor: list or numpy.ndarray, optional
+        Position of minor x tick marks. Default is [-60, -20, 20, 60].
+    regular_axis: bool
+        Y axis can be regular or logarithmic. Pressure levels have
+        different altitudes, which irregularly spaced (unlike pressure
+        values). A trick is to use the logarithm of pressure values to
+        space the Y axis unevenly. Default is not to use a regular
+        axis but the logarithmic.
+    title: str, optional
+        Center top title if desired. Default is empty.
+    cbstring: str, optional
+        Title for the colorbar. If none provided, it will try to use
+        `units` attribute in data array if is defined.
+    save: bool or str, optional
+        This can be a boolean flag to create a PDF file with the
+        plotted map, in which case the file will be named
+        `output.pdf`, or a string with a specific name for the file.
+        Default is only show the plot.
+    transparent: bool, optional
+        If `save` is True or some str object with a name, this keyword
+        controls how the background is plotted. If True, then
+        background will be transparent. This is useful if the image is
+        to be used in slideshows. Default is False.
+
+    Returns
+    -------
+    matplotlib.axes.Axes with plot attached.
+    """  # noqa
+
+    # plot settings
+    plot_settings()
+
+    # get coordinates
+    lev = data.level.values
+    lat = data.latitude.values
+
+    # get contour levels
+    if levels is None:
+        levels = create_clev(data, minv, maxv, nlevels)
+
+    # guess ticks for colorbar
+    if cticks is None:
+        cticks = levels[1:-1:2]
+
+    # in case we plot a single plot
+    if axes is None:
+        plt.figure(figsize=(wmm / 25.4, hmm / 25.4))
+        axes = plt.axes()
+        maximize = 1
+    else:
+        maximize = 0
+
+    # xtick marks
+    if xticks is None:
+        xticks = [-80, -40, 0, 40, 80]
+
+    # xtick labelsize
+    if xticklabels is None:
+        xticklabels = [r'80$^{\circ}$S', r'40$^{\circ}$S',
+                       r'0$^{\circ}$', r'40$^{\circ}$N',
+                       r'80$^{\circ}$N']
+
+    # xminor marks
+    if xminor is None:
+        xminor = [-60, -20, 20, 60]
+
+    # create unevenly spaced axis
+    if regular_axis is False:
+        lev = np.log10(lev)
+
+    if method == 'filled':
+        # plot filled countour with specs
+        fmap = axes.contourf(lat, lev, data.values, levels=levels, cmap=cm,
+                             extend=extend)
+        cb = plt.colorbar(fmap, orientation='horizontal', pad=0.10,
+                          format=FuncFormatter(_no_hyphen),
+                          shrink=0.75, ax=axes, ticks=cticks)
+    elif method == 'mesh':
+
+        # fix coords
+        corlev, corlat = corner_coords(lev, lat)
+
+        # plot grid cells with specs
+        cmap = get_cmap(cm, len(levels))
+        cnorm = BoundaryNorm(levels, cmap.N)
+        fmap = axes.pcolormesh(corlat, corlev, data.values, cmap=cmap,
+                               norm=cnorm)
+        cb = plt.colorbar(fmap, orientation='horizontal', pad=0.05,
+                          format=FuncFormatter(_no_hyphen),
+                          shrink=0.75, ax=axes, extend=extend,
+                          ticks=cticks)
+    else:
+        msg = 'method can only be \'filled\' or \'mesh\''
+        raise ValueError(msg)
+
+    # x axis settings
+    axes.set_xticks(xticks)
+    axes.set_xticklabels(xticklabels)
+    axes.set_xlim(xlim)
+    axes.xaxis.set_minor_locator(FixedLocator(xminor))
+
+    # set y ticks to specific values
+    if regular_axis is False:
+        yval = [850, 500, 200, 100]
+        yticks = np.log10(yval)
+        yticklabels = [str(x) for x in yval]
+        axes.set_yticks(yticks)
+        axes.set_yticklabels(yticklabels)
+
+    # invert axis
+    axes.invert_yaxis()
+
+    # labels
+    axes.set_ylabel(r'Pressure (hPa)')
+
+    # add colorbar title
+    if cbstring is None:
+        try:
+            cbstring = data.units
+        except AttributeError:
+            pass
+    cb.set_label(cbstring)
+
+    # add plot title
+    axes.set_title(title)
+
+    # maximize plot if only one
+    if maximize == 1:
+        plt.tight_layout()
+
+        # savefig if provided name
+        save_func(save, transparent)
+
+    return axes
+
+
+def panel_pressure_latitude(dlist, slist=None, wmm=180, hmm=90,
+                            save=None, transparent=False):
+    """Panels version of `plot_pressure_latitude`.
+
+    Parameters
+    ----------
+    dlist: list of xarray.DataArray
+        All data arrays must be 2 dimensional with named coordinates
+        `latitude` and `level`. 
+    slist: list of dict objects of specifications, optional
+        Each array in `dlist` must have a dictionary of options or
+        specifications in this list. See `plot_pressure_latitude` for
+        possible specifications.
+    wmm: float, optional
+        Width of the figure to plot in units of mm. Default is 180 mm.
+    hmm: float, optional
+        Height of the figure to plot in units of mm. Default is 90 mm.
+    save: bool or str, optional
+        This can be a boolean flag to create a PDF file with the
+        plotted map, in which case the file will be named
+        `output.pdf`, or a string with a specific name for the file.
+        Default is only show the plot.
+    transparent: bool, optional
+        If `save` is True or some str object with a name, this keyword
+        controls how the background is plotted. If True, then
+        background will be transparent. This is useful if the image is
+        to be used in slideshows. Default is False.
+
+    Returns
+    -------
+    matplotlib.figure.Figure object with panel plots.
+    """  # noqa
+
+    # check number of dataset equals specifications
+    ndat = len(dlist)
+
+    if slist is not None:
+        nspc = len(slist)
+
+        if ndat != nspc:
+            msg = 'more/less specifications than datasets'
+            raise ValueError(msg)
+
+    # create plot
+    fig = plt.figure(figsize=(wmm / 25.4, hmm / 25.4))
+
+    # get better shape for these many datasets
+    nrows, ncols = _get_pshape(ndat)
+
+    # actually plot
+    for p in range(ndat):
+
+        # get data
+        data = dlist[p]
+
+        # create axes
+        ax = plt.subplot(nrows, ncols, p + 1)
+
+        # plot
+        if slist is not None:
+            spec = slist[p]
+
+            # remove any axes specification just in case
+            try:
+                del spec['axes']
+            except KeyError:
+                pass
+
+            plot_pressure_latitude(data, axes=ax, **spec)
+        else:
+            plot_pressure_latitude(data, axes=ax)
+
+    # maximize output
+    plt.tight_layout()
+
+    # savefig if provided name
+    save_func(save, transparent)
+
+    return fig
