@@ -382,7 +382,7 @@ def get_significant_diff(adata, bdata, alpha=0.05, eqvar=True,
         return new
 
 
-def get_zonal_mean(data, time_mean=False):
+def get_zonal_means(data, time_mean=False):
     """Take the average values along longitude axis.
 
     For every latitude we will average all longitudes. This is known
