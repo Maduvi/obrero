@@ -286,7 +286,7 @@ def add_climatology(data, clim):
 def get_significant_diff(adata, bdata, alpha=0.05, eqvar=True,
                          fill_value=np.nan, diff=True,
                          means_too=False):
-    """Perform a student's t-test (or Welsch's if eqvar = False) to
+    """Perform a student's t-test (or Welch's if eqvar = False) to
     test the hypothesis:
 
         H0: datasets have equal mean
@@ -316,7 +316,7 @@ def get_significant_diff(adata, bdata, alpha=0.05, eqvar=True,
         Significance level for the test. Default is 0.05.
     eqvar: bool, optional
         Equal or different variance. Whether this is a student's
-        t-test or a Welsch's test. Default is True, so the former.
+        t-test or a Welch's t-test. Default is True, so the former.
     fill_value: float, optional
         For the masking operation. Default is numpy.nan.
     diff: bool, optional
