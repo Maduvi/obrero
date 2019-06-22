@@ -264,7 +264,7 @@ def mask_below(data, thres):
     newdata = data.copy()
     newdata.values = mask_array
 
-    return data
+    return newdata
 
 
 def check_bounds(bounds):
