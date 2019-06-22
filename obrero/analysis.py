@@ -369,7 +369,7 @@ def get_significant_diff(adata, bdata, alpha=0.05, eqvar=True,
         values = np.array(amean.values)
 
     # mask non significant
-    maskval = np.ma.masked_array(values, psig == False,
+    maskval = np.ma.masked_array(values, psig == False,  # noqa E712
                                  fill_value=fill_value)
 
     # return array
