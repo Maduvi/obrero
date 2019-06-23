@@ -737,6 +737,9 @@ def panel_global_contour(dlist, slist, wmm=180, hmm=90,
     matplotlib.figure.Figure object with panel plots.
     """  # noqa
 
+    # plot settings
+    plot_settings()
+    
     # check number of dataset equals specifications
     ndat = len(dlist)
     nspc = len(slist)
@@ -1172,6 +1175,7 @@ def plot_zonal_mean(data, style=None, axes=None, xticks=None,
         controls how the background is plotted. If True, then
         background will be transparent. This is useful if the image is
         to be used in slideshows. Default is False.
+
     Returns
     -------
     matplotlib.axes.Axes with plot attached.
@@ -1292,6 +1296,9 @@ def panel_zonal_mean(dlist, slist=None, wmm=180, hmm=90, save=None,
     matplotlib.figure.Figure object with panel plots.
     """  # noqa
 
+    # plot settings
+    plot_settings()
+    
     # check number of dataset equals specifications
     ndat = len(dlist)
 
@@ -1311,7 +1318,6 @@ def panel_zonal_mean(dlist, slist=None, wmm=180, hmm=90, save=None,
     # get minimum and maximum values
     minv = np.nanmin(dlist)
     maxv = np.nanmax(dlist)
-    ylim = [0.9 * minv, 1.1 * maxv]
 
     # actually plot
     for p in range(ndat):
@@ -1325,6 +1331,12 @@ def panel_zonal_mean(dlist, slist=None, wmm=180, hmm=90, save=None,
         # plot
         if slist is not None:
             spec = slist[p]
+
+            if 'ylim' in spec:
+                ylim = spec['ylim']
+                del spec['ylim']
+            else:
+                ylim = [0.9 * minv, 1.1 * maxv]
 
             # remove any axes specification just in case
             try:
