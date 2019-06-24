@@ -785,6 +785,9 @@ def panel_plot_malhi(table_data, wmm=180, hmm=180, names=['CTL', 'EXP'],
     matplotlib.figure.Figure object with panel plots.
     """  # noqa
 
+    # settings
+    oplot.plot_settings()
+
     # bounds
     cam = [-100, -80, 10, 25]
     nsam = [-90, -30, -25, 10]
