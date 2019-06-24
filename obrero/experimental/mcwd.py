@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+import matplotlib
 from matplotlib.lines import Line2D
 
 from obrero import io
@@ -148,11 +149,11 @@ def mcwd_composite_map(mcwd_exp, map_exp, mcwd_ctl, map_ctl,
     # whether create netcdf file
     if save is not None:
         if save is True:
-            io.savenc(xarr, 'output_composite.nc')
+            io.save_nc(xarr, 'output_composite.nc')
         elif save is False:
             pass
         else:
-            io.savenc(xarr, save)
+            io.save_nc(xarr, save)
 
     # whether get pandas dataframe
     if save_table is not None:
@@ -507,6 +508,9 @@ def plot_mcwd_composite(composite, wmm=100, hmm=80, axes=None,
     matplotlib.axes.Axes with plot attached.    
     """  # noqa
 
+    # plot settings
+    oplot.plot_settings()
+
     # get cyclic values and coords
     cval, clon = oplot.get_cyclic_values(composite)
     lat = composite.latitude.values
@@ -524,8 +528,12 @@ def plot_mcwd_composite(composite, wmm=100, hmm=80, axes=None,
         maximize = 0
 
     # colormap
-    cmap = oplot.ListedColormap(['FireBrick', 'Chocolate', 'Orange',
-                                 'Yellow', 'YellowGreen', 'DarkGreen'])
+    # cmap = oplot.ListedColormap(['FireBrick', 'Chocolate', 'Orange',
+    #                              'Yellow', 'YellowGreen', 'DarkGreen'])
+    cmap_base = matplotlib.cm.get_cmap('BrBG')
+    cmap = oplot.ListedColormap([cmap_base(x) for x
+                                 in np.linspace(0, 1, 6)])
+
     # levels
     lev = range(7)
 
@@ -645,6 +653,9 @@ def plot_malhi(table_data, wmm=90, hmm=90, names=['CTL', 'EXP'],
     matplotlib.axes.Axes with plot attached.    
     """  # noqa
 
+    # plot settings
+    oplot.plot_settings()
+
     # check if df or text file
     if isinstance(table_data, str):
         table = pd.read_csv(table_data, index_col=0)
@@ -672,9 +683,10 @@ def plot_malhi(table_data, wmm=90, hmm=90, names=['CTL', 'EXP'],
         maximize = 0
 
     # colors dictionary
-    cdict = {'0.5': 'FireBrick', '1.5': 'Chocolate', '2.5': 'Orange',
-             '3.5': 'Yellow', '4.5': 'YellowGreen',
-             '5.5': 'DarkGreen'}
+    cmap_base = matplotlib.cm.get_cmap('BrBG')
+    cmap = [cmap_base(x) for x in np.linspace(0, 1, 6)]
+    cdict = {'0.5': cmap[0], '1.5': cmap[1], '2.5': cmap[2],
+             '3.5': cmap[3], '4.5': cmap[4], '5.5': cmap[5]}
 
     # custom legend lines
     custom_names = ['Distance to ' + names[0], names[1]]
@@ -724,7 +736,7 @@ def plot_malhi(table_data, wmm=90, hmm=90, names=['CTL', 'EXP'],
         positive_minx -= positive_minx % -100
         xlim = [-positive_minx, 0]
         axes.set_xlim(xlim)
-        
+
     # plot settings
     axes.set_xlabel(xlabel)
     axes.set_ylabel(ylabel)
