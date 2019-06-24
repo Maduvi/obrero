@@ -25,6 +25,8 @@ Here you will find Jupyter Notebooks.
 - [Plotting only significant differences](https://nbviewer.jupyter.org/github/Maduvi/obrero/blob/master/examples/example_20.ipynb)
 - [Plotting zonal means](https://nbviewer.jupyter.org/github/Maduvi/obrero/blob/master/examples/example_22.ipynb)
 - [Plotting zonal means: panels](https://nbviewer.jupyter.org/github/Maduvi/obrero/blob/master/examples/example_23.ipynb)
+- [Plotting pressure versus laitude contours](https://nbviewer.jupyter.org/github/Maduvi/obrero/blob/master/examples/example_30.ipynb)
+- [Plotting pressure versus latitude contours: panels](https://nbviewer.jupyter.org/github/Maduvi/obrero/blob/master/examples/example_31.ipynb)
 
 ## El Niño-Southern Oscillation
 - [Calculating Oceanic Niño Index](https://nbviewer.jupyter.org/github/Maduvi/obrero/blob/master/examples/example_08.ipynb)
