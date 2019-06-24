@@ -35,6 +35,6 @@ Here you will find Jupyter Notebooks.
 ## Maximum Climatological Water Deficit
 - [Calculating MCWD](https://nbviewer.jupyter.org/github/Maduvi/obrero/blob/master/examples/example_25.ipynb)
 - [Calculating composite values of MCWD and MAP](https://nbviewer.jupyter.org/github/Maduvi/obrero/blob/master/examples/example_26.ipynb)
-- [Plotting composite values of MCWD and MAP]https://nbviewer.jupyter.org/github/Maduvi/obrero/blob/master/examples/example_27.ipynb()
+- [Plotting composite values of MCWD and MAP](https://nbviewer.jupyter.org/github/Maduvi/obrero/blob/master/examples/example_27.ipynb)
 - [Plotting MCWD versus MAP](https://nbviewer.jupyter.org/github/Maduvi/obrero/blob/master/examples/example_28.ipynb)
 - [Plotting MCWD versus MAP: regional panels](https://nbviewer.jupyter.org/github/Maduvi/obrero/blob/master/examples/example_29.ipynb)
