@@ -1782,6 +1782,9 @@ def panel_pressure_latitude(dlist, slist=None, wmm=180, hmm=90,
     matplotlib.figure.Figure object with panel plots.
     """  # noqa
 
+    # settings
+    plot_settings()
+
     # check number of dataset equals specifications
     ndat = len(dlist)
 
