@@ -739,7 +739,7 @@ def panel_global_contour(dlist, slist, wmm=180, hmm=90,
 
     # plot settings
     plot_settings()
-    
+
     # check number of dataset equals specifications
     ndat = len(dlist)
     nspc = len(slist)
@@ -1298,7 +1298,7 @@ def panel_zonal_mean(dlist, slist=None, wmm=180, hmm=90, save=None,
 
     # plot settings
     plot_settings()
-    
+
     # check number of dataset equals specifications
     ndat = len(dlist)
 
