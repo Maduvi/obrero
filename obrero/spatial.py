@@ -79,79 +79,6 @@ def shift180(lon):
     return lon
 
 
-def area_weights(data):
-    """Weights for area averages based on areas.
-
-    Computes weights for averaging based on latitude-longitude
-    rectangle areas as explained by Doctor Rick in: http://mathforum
-    .org/library/drmath/view/63767.html. Here the spherical radius of
-    Earth is used as 6.3675e6 m.
-
-    Parameters
-    ----------
-    data: xarray.DataArray
-        This array must have named coordinates `latitude` and
-        `longitude`.
-    
-    Returns
-    -------
-    numpy.ndarray with 1 dimension (latitude) and weights for each
-    latitude.
-
-    Note
-    ----
-    Use these weights after having done a zonal mean. To be able to
-    multiply every latitude with its weight.
-    """  # noqa
-
-    # get latitudes and longitude
-    lat = np.array(data.latitude.values)
-    lon = np.array(data.longitude.values)
-
-    # get ther sizes
-    nlat = data.latitude.size
-    mlon = data.longitude.size
-
-    # check monotonic increase or decrease
-    utils.check_monotonic(lat)
-    utils.check_monotonic(lon)
-
-    # get distances x and y using any 2 coords
-    dx = abs(lon[1] - lon[0]) / 2.0
-    dy = abs(lat[1] - lat[0]) / 2.0
-
-    # guess bounds for each gridpoint
-    lonbnds = []
-    latbnds = []
-    for x in lon:
-        lonbnds.append([x + dx, x - dx])
-    for y in lat:
-        latbnds.append([y + dy, y - dy])
-
-    # earth radius in meters
-    R = 6.3675e6
-    R2 = R ** 2
-
-    # convert latbnds and lonbds
-    latrad = np.deg2rad(latbnds)
-    lonrad = np.deg2rad(lonbnds)
-
-    # get areas using Doctor Rick formula
-    areas = np.zeros((nlat, mlon))
-    for i in range(nlat):
-        yb = latrad[i]
-        for j in range(mlon):
-            xb = lonrad[j]
-            s = R2 * (np.sin(yb[1]) - np.sin(yb[0])) * (xb[1] - xb[0])
-            areas[i, j] = abs(s)
-
-    # weights are areas divided by total area
-    weights = areas / areas.sum()
-    latweights = np.sum(weights, axis=1)
-
-    return latweights
-
-
 def coslat_weights(data):
     """Weights for area averages based on cosine of latitude.
 
@@ -319,3 +246,101 @@ def get_bounds_indices(data, bounds):
         lat1 = old
 
     return (lon0, lon1, lat0, lat1)
+
+
+def cells_area(data):
+    """Compute area for each grid cell.
+
+    Computes latitude-longitude rectangle areas as explained by Doctor
+    Rick in: http://mathforum.org/library/drmath/view/63767.html. Here
+    the spherical radius of Earth is used as 6.3675e6 m.
+
+    Parameters
+    ----------
+    data: xarray.DataArray
+        This array must have named coordinates `latitude` and
+        `longitude`.
+    
+    Returns
+    -------
+    numpy.ndarray with shape (nlat, mlon) containning area  of each
+    grid cell. 
+    """  # noqa
+
+    # get latitudes and longitude
+    lat = np.array(data.latitude.values)
+    lon = np.array(data.longitude.values)
+
+    # get ther sizes
+    nlat = data.latitude.size
+    mlon = data.longitude.size
+
+    # check monotonic increase or decrease
+    utils.check_monotonic(lat)
+    utils.check_monotonic(lon)
+
+    # get distances x and y using any 2 coords
+    dx = abs(lon[1] - lon[0]) / 2.0
+    dy = abs(lat[1] - lat[0]) / 2.0
+
+    # guess bounds for each gridpoint
+    lonbnds = []
+    latbnds = []
+    for x in lon:
+        lonbnds.append([x + dx, x - dx])
+    for y in lat:
+        latbnds.append([y + dy, y - dy])
+
+    # earth radius in meters
+    R = 6.3675e6
+    R2 = R ** 2
+
+    # convert latbnds and lonbds
+    latrad = np.deg2rad(latbnds)
+    lonrad = np.deg2rad(lonbnds)
+
+    # get areas using Doctor Rick formula
+    areas = np.zeros((nlat, mlon))
+    for i in range(nlat):
+        yb = latrad[i]
+        for j in range(mlon):
+            xb = lonrad[j]
+            s = R2 * (np.sin(yb[1]) - np.sin(yb[0])) * (xb[1] - xb[0])
+            areas[i, j] = abs(s)
+
+    return areas
+
+
+def area_weights(data):
+    """Weights for area averages based on areas.
+
+    Computes weights for averaging based on latitude-longitude
+    rectangle areas as explained by Doctor Rick in: http://mathforum
+    .org/library/drmath/view/63767.html. Here the spherical radius of
+    Earth is used as 6.3675e6 m.
+
+    Parameters
+    ----------
+    data: xarray.DataArray
+        This array must have named coordinates `latitude` and
+        `longitude`.
+    
+    Returns
+    -------
+    numpy.ndarray with 1 dimension (latitude) and weights for each
+    latitude.
+
+    Note
+    ----
+    Use these weights after having done a zonal mean. To be able to
+    multiply every latitude with its weight.
+    """  # noqa
+
+    # get cells area
+    areas = cells_area(data)
+    
+    # weights are areas divided by total area
+    weights = areas / areas.sum()
+    latweights = np.sum(weights, axis=1)
+
+    return latweights
