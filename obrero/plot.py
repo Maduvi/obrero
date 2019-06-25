@@ -11,7 +11,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.cm import get_cmap
 from matplotlib.colors import BoundaryNorm, ListedColormap
-from matplotlib.ticker import FixedLocator, FuncFormatter
+from matplotlib.ticker import FixedLocator, FuncFormatter, FixedFormatter
 import matplotlib.animation as animation
 
 from cartopy.crs import Mollweide as moll
@@ -350,7 +350,7 @@ def plot_global_contour(data, method='filled', cm='jet', axes=None,
     cm: str, optional
         Colormap to be used. By default is Jet colormap.
     axes: cartopy.mpl.geoaxes.GeoAxes, optional
-        This axes should have some projection from Cartopy. If it is
+        These axes should have some projection from Cartopy. If it is
         not provided, brand new axes will be created with default
         projection `proj`.
     proj: cartopy.crs.Projection, optional
@@ -512,7 +512,7 @@ def plot_landsea(land_mask, method='mesh', wmm=180, hmm=90, axes=None,
     hmm: float, optional
         Height of the figure to plot in units of mm. Default is 90 mm.
     axes: cartopy.mpl.geoaxes.GeoAxes, optional
-        This axes should have some projection from Cartopy. If it is
+        These axes should have some projection from Cartopy. If it is
         not provided, brand new axes will be created with default
         projection `proj`.
     title: str, optional
@@ -599,7 +599,7 @@ def plot_glacier(glacier, method='mesh', wmm=180, hmm=90, save=None,
         background will be transparent. This is useful if the image is
         to be used in slideshows. Default is False.
     axes: cartopy.mpl.geoaxes.GeoAxes, optional
-        This axes should have some projection from Cartopy. If it is
+        These axes should have some projection from Cartopy. If it is
         not provided, brand new axes will be created with default
         projection `proj`.
 
@@ -1831,3 +1831,133 @@ def panel_pressure_latitude(dlist, slist=None, wmm=180, hmm=90,
     save_func(save, transparent)
 
     return fig
+
+
+def lon_fixed_formatter(x):
+    """Simple minded longitude formatter. 
+
+    Only because those available in cartopy do not leave a blank space
+    after the degree symbol so it looks crammed. If used outside this
+    module, bear in mind this was thought to be used as part of an
+    iterator to later be included in a
+    matplotlib.ticker.FixedFormatter call.
+    
+    Parameters
+    ----------
+    x: int or float
+        Longitude value.
+
+    Returns
+    -------
+    str with our kind of format. We like that little space after the
+    degree symbol. Also notice we are using TeX's degree symbol.
+    """  # noqa
+
+    if x == 0:
+        fmt = r'%g\degree' % x
+    elif x < 180 and x > 0:
+        fmt = r'%g\degree\,E' % x
+    elif x > 180:
+        x -= 360
+        fmt = r'%g\degree\,W' % abs(x)
+    elif x != -180 and x < 0:
+        fmt = r'%g\degree\,W' % abs(x)
+    elif x == 180 or x == -180:
+        fmt = r'%g\degree' % abs(x)
+    return fmt
+
+
+def lat_fixed_formatter(y):
+    """Simple minded latitude formatter. 
+
+    Only because those available in cartopy do not leave a blank space
+    after the degree symbol so it looks crammed. If used outside this
+    module, bear in mind this was thought to be used as part of an
+    iterator to later be included in a
+    matplotlib.ticker.FixedFormatter call.
+    
+    Parameters
+    ----------
+    y: int or float
+        Latitude value.
+
+    Returns
+    -------
+    str with our kind of format. We like that little space after the
+    degree symbol. Also notice we are using TeX's degree symbol.
+    """  # noqa
+
+    if y < 0:
+        fmt = r'%g\degree\,S' % abs(y)
+    elif y > 0:
+        fmt = r'%g\degree\,N' % y
+    else:
+        fmt = r'%g\degree' % y
+    return fmt
+
+
+def pcar_gridliner(axes, extent, xloc, yloc):
+    """Helper function to avoid lots of coding.
+
+    Sometimes we want simply to add gridlines to an axes. This
+    function was created with custom PlateCarree projections in mind.
+    Simply because adding gridlines and pretty tick labels required a
+    lot of boilerplate code.
+
+    Parameters
+    ----------
+    axes: cartopy.mpl.geoaxes.GeoAxes
+        These axes contain some projection from Cartopy.
+    extent: list
+        This list should contain four values for the extent of the
+        axes:
+
+            [lon0, lon1, lat0, lat1]
+
+        This will also save some few lines if we have several axes.
+    xloc: list
+        List of longitude locations for the gridlines and ticklabels
+        in the x axis.
+    yloc: list
+        List of latitude locations for the gridlines and ticklabels
+        in the y axis.
+
+    Note
+    ----
+    This function returns nothing. Simplt adds stuff to given axes.
+    """  # noqa
+
+    # set extent
+    axes.set_extent(extent, crs=pcar())
+
+    # add coastlines
+    axes.coastlines(resolution='110m')
+
+    # format xticks
+    xfmt = [lon_fixed_formatter(x) for x in xloc]
+
+    # format yticks
+    yfmt = [lat_fixed_formatter(y) for y in yloc]
+
+    # gridlines
+    sty = dict(crs=pcar(), lw=1, linestyle='--', alpha=0.25,
+               color='black')
+    gl = axes.gridlines(**sty)
+    gl.xlocator = FixedLocator(xloc)
+    gl.ylocator = FixedLocator(yloc)
+    gl.xlabels_top = False
+    gl.ylabels_right = False
+
+    # x tick labels
+    axes.set_xticks(xloc[1:-1], crs=pcar())
+    axes.set_xticklabels(xloc[1:-1])
+    axes.xaxis.set_major_formatter(FixedFormatter(xfmt[1:-1]))
+
+    # y tick labels
+    axes.set_yticks(yloc[1:-1], crs=pcar())
+    axes.set_yticklabels(yloc[1:-1])
+    axes.yaxis.set_major_formatter(FixedFormatter(yfmt[1:-1]))
+
+    # no ticks!
+    axes.tick_params(axis='x', bottom=False)
+    axes.tick_params(axis='y', left=False)
