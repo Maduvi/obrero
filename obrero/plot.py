@@ -65,7 +65,7 @@ def _get_pshape(nplots):
     return (nrows, ncols)
 
 
-def _no_hyphen(x, pos):
+def no_hyphen(x, pos):
     """Replace long hyphen LaTeX uses by smaller minus sign."""  # noqa
     rv = format(x)
 
@@ -83,7 +83,7 @@ def plot_settings():
     mpl.rc('figure', autolayout=False)
     mpl.rc('font', family='sans-serif')
     mpl.rc('font', size=7)
-    mpl.rc('axes', titlesize=8)
+    mpl.rc('axes', titlesize=7)
     mpl.rc('axes', labelsize=7)
     mpl.rc('legend', fontsize=7)
     mpl.rc('axes', unicode_minus=False)
@@ -439,7 +439,7 @@ def plot_global_contour(data, method='filled', cm='jet', axes=None,
         fmap = axes.contourf(clon, lat, cval, levels=levels, cmap=cm,
                              transform=pcar(), extend=extend)
         cb = plt.colorbar(fmap, orientation='horizontal', pad=0.05,
-                          format=FuncFormatter(_no_hyphen),
+                          format=FuncFormatter(no_hyphen),
                           shrink=0.75, ax=axes, ticks=cticks)
     elif method == 'mesh':
 
@@ -452,7 +452,7 @@ def plot_global_contour(data, method='filled', cm='jet', axes=None,
         fmap = axes.pcolormesh(corlon, corlat, cval, cmap=cmap,
                                norm=cnorm, transform=pcar())
         cb = plt.colorbar(fmap, orientation='horizontal', pad=0.05,
-                          format=FuncFormatter(_no_hyphen),
+                          format=FuncFormatter(no_hyphen),
                           shrink=0.75, ax=axes, extend=extend,
                           ticks=cticks)
     else:
@@ -1473,7 +1473,7 @@ def animate_global_contour(data,  method='filled',
                                  cmap=cm, transform=pcar(),
                                  extend=extend)
             cb = fig.colorbar(fmap, orientation='horizontal', pad=0.05,
-                              format=FuncFormatter(_no_hyphen),
+                              format=FuncFormatter(no_hyphen),
                               shrink=0.75, ticks=cticks)
         elif method == 'mesh':
             # fix coords
@@ -1485,7 +1485,7 @@ def animate_global_contour(data,  method='filled',
             fmap = axes.pcolormesh(corlon, corlat, cval[0], cmap=cmap,
                                    norm=cnorm, transform=pcar())
             cb = fig.colorbar(fmap, orientation='horizontal', pad=0.05,
-                              format=FuncFormatter(_no_hyphen),
+                              format=FuncFormatter(no_hyphen),
                               shrink=0.75, extend=extend,
                               ticks=cticks)
         else:
@@ -1688,7 +1688,7 @@ def plot_pressure_latitude(data, method='filled', axes=None, wmm=80,
         fmap = axes.contourf(lat, lev, data.values, levels=levels, cmap=cm,
                              extend=extend)
         cb = plt.colorbar(fmap, orientation='horizontal', pad=0.10,
-                          format=FuncFormatter(_no_hyphen),
+                          format=FuncFormatter(no_hyphen),
                           shrink=0.75, ax=axes, ticks=cticks)
     elif method == 'mesh':
 
@@ -1701,7 +1701,7 @@ def plot_pressure_latitude(data, method='filled', axes=None, wmm=80,
         fmap = axes.pcolormesh(corlat, corlev, data.values, cmap=cmap,
                                norm=cnorm)
         cb = plt.colorbar(fmap, orientation='horizontal', pad=0.05,
-                          format=FuncFormatter(_no_hyphen),
+                          format=FuncFormatter(no_hyphen),
                           shrink=0.75, ax=axes, extend=extend,
                           ticks=cticks)
     else:
