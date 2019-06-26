@@ -449,7 +449,7 @@ def plot_global_contour(data, method='filled', cm='jet', axes=None,
         # plot grid cells with specs
         cmap = get_cmap(cm, len(levels))
         cnorm = BoundaryNorm(levels, cmap.N)
-        fmap = axes.pcolormesh(corlon, corlat, cval, cmap=cmap,
+        fmap = axes.pcolor(corlon, corlat, cval, cmap=cmap,
                                norm=cnorm, transform=pcar())
         cb = plt.colorbar(fmap, orientation='horizontal', pad=0.05,
                           format=FuncFormatter(no_hyphen),
