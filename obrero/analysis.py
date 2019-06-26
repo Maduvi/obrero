@@ -599,4 +599,11 @@ def ncl_zonal_mpsi(v, ps, p):
     else:
         zmpsi = _zonal_mpsi(v.values, ps.values, p, lat)
 
-    return zmpsi
+    # create xarray
+    xzmpsi = v.copy()
+    xzmpsi.values = zmpsi
+    xzmpsi.name = 'zonal_mpsi'
+    xzmpsi.attrs['long_name'] = 'Zonal Mean Meridional Stream Function'
+    xzmpsi.attrs['standard_name'] = 'zonal_mpsi'
+    
+    return xzmpsi
