@@ -413,3 +413,190 @@ def get_zonal_means(data, time_mean=False):
         zm = zm.mean(dim='time', keep_attrs=True)
 
     return zm
+
+
+def _zonal_mpsi(V, PS, P, LAT):
+    """Compute zonal mean meridional stream function like NCL."""
+
+    # dimensions
+    klev, nlat, mlon = V.shape
+
+    # constants and params
+    G = 9.80616    # gravity [m s-1]
+    A = 6.37122e6  # earth spherical radius [m]
+    PI = np.pi
+    RAD = PI / 180
+    CON = 2.0 * PI * A / G
+
+    # minimum and maximum pressures
+    PTOP = 500
+    PBOT = 100500
+
+    # check p values
+    if np.min(P) < PTOP:
+        print(np.min(P))
+        msg = ('pressures in pressure array cannot be below 500' +
+               ' Pa. Check units.')
+        raise ValueError(msg)
+
+    # latitude values from array and cosine
+    COSLAT = np.cos(LAT * RAD)
+
+    if np.min(PS) < PTOP:
+        msg = 'surface pressure cannot be below 500 Pa. Check units.'
+        raise ValueError(msg)
+
+    # create empty arrays with extended levels
+    ptmp = np.zeros(2 * klev + 1)
+    vvprof = np.zeros(2 * klev + 1)
+    dp = np.zeros(2 * klev + 1)
+
+    # create empty arrays with same sizes
+    vtmp = np.zeros((klev, nlat, mlon))
+    zonal_mpsi = np.zeros((klev, nlat))
+
+    # counter
+    count = 0
+
+    # fill extended pressure array top levels (k=0 is bottom)
+    for k in range(1, 2 * klev, 2):
+        ptmp[k] = P[count]
+        count += 1
+
+    # fill extended pressure array bottom levels with neighbors mean
+    for k in range(2, 2 * klev - 1, 2):
+        ptmp[k] = (ptmp[k + 1] + ptmp[k - 1]) * 0.5
+
+    # assign bottom and top values
+    ptmp[0] = PTOP
+    ptmp[2 * klev] = PBOT
+
+    # compute pressure differences
+    for k in range(1, 2 * klev):
+        dp[k] = ptmp[k + 1] - ptmp[k - 1]
+
+    # mask those with greater pressure than surface
+    for m in range(mlon):
+        for n in range(nlat):
+            for k in range(klev):
+                if P[k] > PS[n, m]:
+                    vtmp[k, n, m] = np.nan
+                else:
+                    vtmp[k, n, m] = V[k, n, m]
+
+    # zonal mean
+    vbar = np.nanmean(vtmp, axis=2)
+
+    # now compute mpsi for each latitude
+    for n in range(nlat):
+
+        C = CON * COSLAT[n]
+
+        # reset start to 0
+        ptmp[0] = 0
+
+        # replace all for nan values again
+        for k in range(1, 2 * klev):
+            ptmp[k] = np.nan
+
+        # make v of all bottom levels 0
+        for k in range(0, 2 * klev + 1, 2):
+            vvprof[k] = 0
+
+        # get zonal mean v for all top levels (except last one)
+        count = 0
+        for k in range(1, 2 * klev, 2):
+            vvprof[k] = vbar[count, n]
+            count += 1
+
+        # accumulate vvprof (INTEGRAL sum) at bottom levels
+        for k in range(1, 2 * klev, 2):
+            kflag = k
+            ptmp[k + 1] = ptmp[k - 1] - C * vvprof[k] * dp[k]
+
+        # make 0 at the last level (bottom/surface)
+        ptmp[kflag + 1] = -ptmp[kflag-1]
+
+        # average accumulated values at data levels
+        for k in range(1, kflag, 2):
+            ptmp[k] = (ptmp[k + 1] + ptmp[k - 1]) * 0.5
+
+        # fill zonal_mpsi array (the minus sign is a convention)
+        count = 0
+        for k in range(1, 2 * klev, 2):
+            if not np.isnan(ptmp[k]):
+                zonal_mpsi[count, n] = -ptmp[k]
+            else:
+                zonal_mpsi[count, n] = ptmp[k]
+            count += 1
+
+    return zonal_mpsi
+
+
+def ncl_zonal_mpsi(v, ps, p):
+    """This function computes zonal mean meridional stream function.
+    
+
+    This is an almost exact copy of the NCL built in function
+    `zonal_mpsi`, which is originally written in Fortran and can be
+    found in Github here:
+
+        https://github.com/yyr/ncl/blob/master/ni/src/
+            lib/nfpfort/zon_mpsi.f
+
+    Since we have read NCL's open letter about stopping development,
+    we have now started working with Python and we needed a reliable
+    way to calculate this quantity. Maybe there is a better pythonic
+    way of doing this, but for now this will do. So big thanks to NCL
+    folks, we have been using their software extensively.
+
+    Parameters
+    ----------
+    v: xarray.DataArray
+        This is the zonal wind (eastward wind) in units of m s-1.
+        This can be a 3D (lev, lat, lon) or 4D (time, lev, lat, lon)
+        array. It must have named coordinate `latitude`.
+        Levels coordinate must go from top-to-bottom, i.e. air
+        pressure must be increasing.
+    ps: xarray.DataArray
+        This is the surface pressure field in units of Pa. It must be
+        a 2D array (lat, lon), which shape must match `v`.
+    p: numpy.ndarray
+        This is an array with pressure values. It should be the same
+        pressure values in the `v` levels coordinate. We request the
+        user to input this array because it must be in units of Pa,
+        and there is no easy way we can guess the units from the
+        levels coordinate in `v` to convert them to Pa. As well as in
+        `v`, these pressure values must go from top-to-bottom,
+        i.e. air pressure must be increasing.
+
+    Returns
+    -------
+    xarray.DataArray with zonal mean meridional stream function. It
+    will have the same `levels` and `latitude` values as input
+    `v`. Units are kg s-1.
+    """  # noqa
+
+    # get dimensions
+    if len(v.dims) == 4:
+        ntim, klev, nlat, mlon = v.shape
+    elif len(v.dims) == 3:
+        ntim = None
+        klev, nlat, mlon = v.shape
+    else:
+        msg = 'Input zonal wind must be 3 or 4 dimensional'
+        raise ValueError(msg)
+
+    # get latitude values
+    lat = v.latitude.values
+
+    if ntim is not None:
+
+        zmpsi = np.zeros((ntim, klev, nlat))
+
+        for t in range(ntim):
+            zmpsi[t] = _zonal_mpsi(v.values[t], ps.values, p, lat)
+    else:
+        zmpsi = _zonal_mpsi(v.values, ps.values, p, lat)
+
+    return zmpsi
