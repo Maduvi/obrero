@@ -596,14 +596,23 @@ def ncl_zonal_mpsi(v, ps, p):
 
         for t in range(ntim):
             zmpsi[t] = _zonal_mpsi(v.values[t], ps.values, p, lat)
+
+        # create xarray
+        xarr = xr.DataArray(zmpsi, coords={'time': v.time,
+                                           'level': v.level,
+                                           'latitude': v.latitude},
+                            dims=('time', 'level', 'latitude'),
+                            name='zonal_mpsi')
     else:
         zmpsi = _zonal_mpsi(v.values, ps.values, p, lat)
 
-    # create xarray
-    xzmpsi = v.copy()
-    xzmpsi.values = zmpsi
-    xzmpsi.name = 'zonal_mpsi'
-    xzmpsi.attrs['long_name'] = 'Zonal Mean Meridional Stream Function'
-    xzmpsi.attrs['standard_name'] = 'zonal_mpsi'
-    
-    return xzmpsi
+        # create xarray
+        xarr = xr.DataArray(zmpsi, coords={'level': v.level,
+                                           'latitude': v.latitude},
+                            dims=('level', 'latitude'),
+                            name='zonal_mpsi')
+    # attributes
+    xarr.attrs['long_name'] = 'Zonal Mean Meridional Stream Function'
+    xarr.attrs['units'] = 'kg s-1'
+
+    return xarr
