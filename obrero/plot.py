@@ -338,7 +338,7 @@ def plot_global_contour(data, method='filled', cm='jet', axes=None,
                         proj=moll(), lon0=0, extend='neither',
                         levels=None, minv=None, maxv=None,
                         nlevels=None, cbstring=None, title='',
-                        cticks=None, name=None):
+                        cticks=None, name=None, cbar=True):
     """Plot a filled countour global map of a single dataset.
 
     This function will simply use matplotlib and cartopy
@@ -447,9 +447,10 @@ def plot_global_contour(data, method='filled', cm='jet', axes=None,
         # plot filled countour with specs
         fmap = axes.contourf(clon, lat, cval, levels=levels, cmap=cm,
                              transform=pcar(), extend=extend)
-        cb = plt.colorbar(fmap, orientation='horizontal', pad=0.05,
-                          format=FuncFormatter(no_hyphen),
-                          shrink=0.75, ax=axes, ticks=cticks)
+        if cbar is True:
+            cb = plt.colorbar(fmap, orientation='horizontal', pad=0.05,
+                              format=FuncFormatter(no_hyphen),
+                              shrink=0.75, ax=axes, ticks=cticks)
     elif method == 'mesh':
 
         # fix coords
@@ -460,10 +461,11 @@ def plot_global_contour(data, method='filled', cm='jet', axes=None,
         cnorm = BoundaryNorm(levels, cmap.N)
         fmap = axes.pcolor(corlon, corlat, cval, cmap=cmap,
                            norm=cnorm, transform=pcar())
-        cb = plt.colorbar(fmap, orientation='horizontal', pad=0.05,
-                          format=FuncFormatter(no_hyphen),
-                          shrink=0.75, ax=axes, extend=extend,
-                          ticks=cticks)
+        if cbar is True:
+            cb = plt.colorbar(fmap, orientation='horizontal', pad=0.05,
+                              format=FuncFormatter(no_hyphen),
+                              shrink=0.75, ax=axes, extend=extend,
+                              ticks=cticks)
     else:
         msg = 'method can only be \'filled\' or \'mesh\''
         raise ValueError(msg)
@@ -478,12 +480,13 @@ def plot_global_contour(data, method='filled', cm='jet', axes=None,
     add_gridlines(axes)
 
     # add colorbar title
-    if cbstring is None:
-        try:
-            cbstring = data.units
-        except AttributeError:
-            pass
-    cb.set_label(replace_minus(cbstring))
+    if cbar is True:
+        if cbstring is None:
+            try:
+                cbstring = data.units
+            except AttributeError:
+                pass
+        cb.set_label(replace_minus(cbstring))
 
     # add plot title
     axes.set_title(title)
@@ -498,7 +501,10 @@ def plot_global_contour(data, method='filled', cm='jet', axes=None,
                   fontsize=6, verticalalignment='center',
                   bbox=props)
 
-    return (axes, cb)
+    if cbar is True:
+        return (axes, cb)
+    else:
+        return axes
 
 
 def plot_landsea(land_mask, method='mesh', wmm=180, hmm=90, axes=None,
