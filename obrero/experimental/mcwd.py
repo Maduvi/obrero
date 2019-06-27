@@ -580,7 +580,7 @@ def plot_mcwd_composite(composite, wmm=100, hmm=80, axes=None,
     # add titles at top and bottom
     cb.ax.text(-0.05, 2, r' \textbf{MAP}', fontsize=fsize,
                ha='center', va='bottom')
-    cb.ax.text(-0.06, -2, r'\textbf{MCWD}', fontsize=fsize,
+    cb.ax.text(-0.07, -2, r'\textbf{MCWD}', fontsize=fsize,
                ha='center', va='bottom')
 
     # maximize if only one
