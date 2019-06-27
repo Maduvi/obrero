@@ -11,6 +11,9 @@ $ sudo python setup.py install
 
 Omit the `sudo` part if you are not installing obrero systemwide.
 
+## What you can do: examples
+
+See our [examples section](https://github.com/Maduvi/obrero/tree/master/examples) to find out what kind of plots we are talking about. Those are all Jupyter Notebooks with a bit of narration (very little).
 
 ## Modules
 Basic modules include input/output functions, calendar related, spatial and time averaging and processing and some other utilities. As well as a plotting module. All of these are very basic and are just to ease our scripting. There are three very interesting modules however in the experimental section:
