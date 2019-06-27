@@ -577,6 +577,10 @@ def ncl_zonal_mpsi(v, ps, p):
     `v`. Units are kg s-1.
     """  # noqa
 
+    # ignore numpy warnings
+    msg = 'Mean of empty slice'
+    warnings.filterwarnings('ignore', message=msg)
+
     # get dimensions
     if len(v.dims) == 4:
         ntim, klev, nlat, mlon = v.shape
