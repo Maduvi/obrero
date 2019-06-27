@@ -75,6 +75,14 @@ def no_hyphen(x, pos):
     return rv
 
 
+def replace_minus(string):
+    """Replace minus sign in strings for \mhyphen (colorbars).""" # noqa
+    ns = format(string)
+    ns = re.sub('-', r'{\mhyphen}', ns)
+
+    return ns
+
+
 def plot_settings():
     """Helper to set up things we like."""
 
@@ -94,7 +102,8 @@ def plot_settings():
                                    r'\usepackage{subdepth}',
                                    r'\usepackage{type1cm}',
                                    r'\usepackage{gensymb}',
-                                   r'\sansmath'])
+                                   r'\sansmath',
+                                   r'\mathchardef\mhyphen="2D'])
 
 
 def add_gridlines(axes):
@@ -450,7 +459,7 @@ def plot_global_contour(data, method='filled', cm='jet', axes=None,
         cmap = get_cmap(cm, len(levels))
         cnorm = BoundaryNorm(levels, cmap.N)
         fmap = axes.pcolor(corlon, corlat, cval, cmap=cmap,
-                               norm=cnorm, transform=pcar())
+                           norm=cnorm, transform=pcar())
         cb = plt.colorbar(fmap, orientation='horizontal', pad=0.05,
                           format=FuncFormatter(no_hyphen),
                           shrink=0.75, ax=axes, extend=extend,
@@ -474,7 +483,7 @@ def plot_global_contour(data, method='filled', cm='jet', axes=None,
             cbstring = data.units
         except AttributeError:
             pass
-    cb.set_label(cbstring)
+    cb.set_label(replace_minus(cbstring))
 
     # add plot title
     axes.set_title(title)
@@ -1498,7 +1507,7 @@ def animate_global_contour(data,  method='filled',
         axes.set_title(title)
 
         # add colorbar title
-        cb.set_label(cbstring)
+        cb.set_label(replace_minus(cbstring))
 
         # maximize
         fig.tight_layout()
@@ -1687,9 +1696,9 @@ def plot_pressure_latitude(data, method='filled', axes=None, wmm=80,
         # plot filled countour with specs
         fmap = axes.contourf(lat, lev, data.values, levels=levels, cmap=cm,
                              extend=extend)
-        cb = plt.colorbar(fmap, orientation='horizontal', pad=0.10,
+        cb = plt.colorbar(fmap, orientation='horizontal', pad=0.15,
                           format=FuncFormatter(no_hyphen),
-                          shrink=0.75, ax=axes, ticks=cticks)
+                          ax=axes, ticks=cticks)
     elif method == 'mesh':
 
         # fix coords
@@ -1700,10 +1709,9 @@ def plot_pressure_latitude(data, method='filled', axes=None, wmm=80,
         cnorm = BoundaryNorm(levels, cmap.N)
         fmap = axes.pcolormesh(corlat, corlev, data.values, cmap=cmap,
                                norm=cnorm)
-        cb = plt.colorbar(fmap, orientation='horizontal', pad=0.05,
+        cb = plt.colorbar(fmap, orientation='horizontal', pad=0.15,
                           format=FuncFormatter(no_hyphen),
-                          shrink=0.75, ax=axes, extend=extend,
-                          ticks=cticks)
+                          ax=axes, extend=extend, ticks=cticks)
     else:
         msg = 'method can only be \'filled\' or \'mesh\''
         raise ValueError(msg)
@@ -1734,7 +1742,7 @@ def plot_pressure_latitude(data, method='filled', axes=None, wmm=80,
             cbstring = data.units
         except AttributeError:
             pass
-    cb.set_label(cbstring)
+    cb.set_label(replace_minus(cbstring))
 
     # add plot title
     axes.set_title(title)
