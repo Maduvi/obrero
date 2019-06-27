@@ -514,9 +514,6 @@ def _zonal_mpsi(V, PS, P, LAT):
             kflag = k
             ptmp[k + 1] = ptmp[k - 1] - C * vvprof[k] * dp[k]
 
-        # make 0 at the last level (bottom/surface)
-        ptmp[kflag + 1] = -ptmp[kflag-1]
-
         # average accumulated values at data levels
         for k in range(1, kflag, 2):
             ptmp[k] = (ptmp[k + 1] + ptmp[k - 1]) * 0.5
@@ -529,6 +526,9 @@ def _zonal_mpsi(V, PS, P, LAT):
             else:
                 zonal_mpsi[count, n] = ptmp[k]
             count += 1
+
+    # make 0 at the last level (bottom/surface)
+    zonal_mpsi[-1, :] = 0
 
     return zonal_mpsi
 
