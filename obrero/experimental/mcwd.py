@@ -532,7 +532,7 @@ def plot_mcwd_composite(composite, wmm=100, hmm=80, axes=None,
     #                              'Yellow', 'YellowGreen', 'DarkGreen'])
     cmap_base = matplotlib.cm.get_cmap('BrBG')
     cmap = oplot.ListedColormap([cmap_base(x) for x
-                                 in np.linspace(0, 1, 6)])
+                                 in [0., 0.2, 0.32, 0.67, 0.8, 1.]])
 
     # levels
     lev = range(7)
@@ -684,7 +684,7 @@ def plot_malhi(table_data, wmm=90, hmm=90, names=['CTL', 'EXP'],
 
     # colors dictionary
     cmap_base = matplotlib.cm.get_cmap('BrBG')
-    cmap = [cmap_base(x) for x in np.linspace(0, 1, 6)]
+    cmap = [cmap_base(x) for x in [0., 0.2, 0.32, 0.67, 0.8, 1.]]
     cdict = {'0.5': cmap[0], '1.5': cmap[1], '2.5': cmap[2],
              '3.5': cmap[3], '4.5': cmap[4], '5.5': cmap[5]}
 
