@@ -67,7 +67,11 @@ def _get_pshape(nplots):
 
 def no_hyphen(x, pos):
     """Replace long hyphen LaTeX uses by smaller minus sign."""  # noqa
-    rv = format(x)
+
+    if x == int(x):
+        rv = '%d' % x
+    else:
+        rv = format(x)
 
     if mpl.rcParams['text.usetex']:
         rv = re.sub('$-$', r'\mhyphen', rv)
