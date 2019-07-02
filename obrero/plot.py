@@ -1733,12 +1733,16 @@ def plot_pressure_latitude(data, method='filled', axes=None, wmm=80,
     axes.xaxis.set_minor_locator(FixedLocator(xminor))
 
     # set y ticks to specific values
+    yval = [850, 500, 200, 100]
+    yticklabels = [str(x) for x in yval]
+
     if regular_axis is False:
-        yval = [850, 500, 200, 100]
         yticks = np.log10(yval)
-        yticklabels = [str(x) for x in yval]
-        axes.set_yticks(yticks)
-        axes.set_yticklabels(yticklabels)
+    else:
+        yticks = yval
+
+    axes.set_yticks(yticks)
+    axes.set_yticklabels(yticklabels)
 
     # invert axis
     axes.invert_yaxis()
@@ -1979,3 +1983,298 @@ def pcar_gridliner(axes, extent, xloc, yloc):
     # no ticks!
     axes.tick_params(axis='x', bottom=False)
     axes.tick_params(axis='y', left=False)
+
+
+def plot_walker_circulation(omega, uchi, method='filled', axes=None,
+                            wmm=80, hmm=80, levels=None, minv=None,
+                            maxv=None, nlevels=None, cm='coolwarm',
+                            extend='neither', cticks=None,
+                            refvector=1, reflabel=None,
+                            xlim=[120, 300], xticks=None,
+                            regular_axis=False, title='',
+                            cbstring=None, save=None,
+                            transparent=False):
+    """Plot a way to see Walker circulation.
+
+    This plot is a pressure versus longitude graph that displays the
+    omega vertical air velocity (Pa s-1) and the irrotational
+    component of the zonal wind. This plot can combine filled contours
+    with quiver arrows.
+
+    Parameters
+    ----------
+    omega: xarray.DataArray
+        This variable is the vertical air velocity in pressure
+        units. Be careful with the convention that upward wind has a
+        negative sign since pressure is decreasing. It must have the
+        same shape as `uchi`.
+    uchi: xarray.DataArray
+        This is the irrotational (divergent) component of the zonal
+        wind vector. To obtain this quantity you need both horizontal
+        wind components (u and v) and Python module `windspharm` is
+        the best option.
+    method: str, optional
+        It can be 'filled' to use matplotlib's `contourf`
+        function, or 'mesh' which uses matplotlib's `pcolormesh`, or
+        'none' in which case there will be no contours. Default is to
+        plot filled contours. 
+    wmm: float, optional
+        Width of the figure to plot in units of mm. Default is 80 mm.
+    hmm: float, optional
+        Height of the figure to plot in units of mm. Default is 80 mm.
+    levels: list or numpy.ndarray, optional
+        Contour levels can be specified with this keyword. Otherwise
+        you can let this function create the contour levels using
+        keywords `minv`, `maxv`, and `nlevels`.
+    minv: float, optional
+        Minimum value for contour levels in colorbar. If not set, the
+        minimum value found in the data array will be used.
+    maxv: float, optional
+        Maximum value for contour levels in colorbar. If not set, the
+        maximum value found in the data array will be used.
+    nlevels: int, optional
+        Number of levels for contour coloring. If not used, default is
+        10 contour levels.
+    cm: str, optional
+        Colormap to be used. By default is coolwarm colormap.
+    extend: str, optional
+        Whether to have pointing arrows at the ends of the
+        colorbar. It can be 'neither', to not use arrows but have 
+        blunt ends, 'max' to only have an arrow at the maximum end of
+        the colorbar, 'min', and 'both'.
+    cticks: list or numpy.ndarray, optional
+        These ticks are for the colorbar, in case you want particular
+        ones. By default the function will try to use the "best ones",
+        choosing values every 2 contour levels.
+    refvector: float, optional
+        Length in units of the reference vector arrow. Default is 1.
+    reflabel: string, optional
+        Text that will appear next to the reference vector. Default is
+        the same refvector with units of m s-1.
+    xlim: list, optional
+        To specify the limits in the x axis. Default is [120, 300],
+        which is to say from 120 E to 90 W (Pacific).
+    xticks: list or numpy.ndarray, optional
+        In case the user wants different latitudes in the x
+        axis. Default is [90, 120, 150, 180, 210, 240, 270, 300, 330].
+    regular_axis: bool
+        Y axis can be regular or logarithmic. Pressure levels have
+        different altitudes, which irregularly spaced (unlike pressure
+        values). A trick is to use the logarithm of pressure values to
+        space the Y axis unevenly. Default is not to use a regular
+        axis but the logarithmic.
+    title: str, optional
+        Center top title if desired. Default is empty.
+    cbstring: str, optional
+        Title for the colorbar. If none provided, it will try to use
+        `units` attribute in data array if is defined.
+    save: bool or str, optional
+        This can be a boolean flag to create a PDF file with the
+        plotted map, in which case the file will be named
+        `output.pdf`, or a string with a specific name for the file.
+        Default is only show the plot.
+    transparent: bool, optional
+        If `save` is True or some str object with a name, this keyword
+        controls how the background is plotted. If True, then
+        background will be transparent. This is useful if the image is
+        to be used in slideshows. Default is False.
+
+    Returns
+    -------
+    matplotlib.axes.Axes with plot attached.
+    """  # noqa
+
+    # plot settings
+    plot_settings()
+
+    # get coordinates
+    lev = omega.level.values
+    lon = omega.longitude.values
+
+    # get contour levels
+    if levels is None:
+        levels = create_clev(omega, minv, maxv, nlevels)
+
+    # guess ticks for colorbar
+    if cticks is None:
+        cticks = levels[1:-1:2]
+
+    # in case we plot a single plot
+    if axes is None:
+        plt.figure(figsize=(wmm / 25.4, hmm / 25.4))
+        axes = plt.axes()
+        maximize = 1
+    else:
+        maximize = 0
+
+    # xtick marks
+    if xticks is None:
+        xticks = [120, 150, 180, 210, 240, 270, 300]
+    xfmt = [lon_fixed_formatter(x) for x in xticks]
+
+    # create unevenly spaced axis
+    if regular_axis is False:
+        lev = np.log10(lev)
+
+    if method == 'filled':
+        # plot filled countour with specs
+        fmap = axes.contourf(lon, lev, omega.values, levels=levels,
+                             cmap=cm, extend=extend)
+        cb = plt.colorbar(fmap, orientation='horizontal', pad=0.1,
+                          format=FuncFormatter(no_hyphen), shrink=0.8,
+                          ax=axes, ticks=cticks)
+    elif method == 'mesh':
+        # fix coords
+        corlev, corlon = corner_coords(lev, lon)
+
+        # plot grid cells with specs
+        cmap = get_cmap(cm, len(levels))
+        cnorm = BoundaryNorm(levels, cmap.N)
+        fmap = axes.pcolormesh(corlon, corlev, omega.values,
+                               cmap=cmap, norm=cnorm)
+        cb = plt.colorbar(fmap, orientation='horizontal', pad=0.1,
+                          format=FuncFormatter(no_hyphen), shrink=0.8,
+                          ax=axes, extend=extend, ticks=cticks)
+    elif method == 'none':
+        pass
+
+    # x axis settings
+    axes.set_xlim(xlim)
+    axes.set_xticks(xticks)
+    axes.set_xticklabels(xticks)
+    axes.xaxis.set_major_formatter(FixedFormatter(xfmt))
+
+    # set y ticks to specific values
+    yval = [850, 500, 200, 100]
+    yticklabels = [str(x) for x in yval]
+
+    if regular_axis is False:
+        yticks = np.log10(yval)
+    else:
+        yticks = yval
+
+    axes.set_yticks(yticks)
+    axes.set_yticklabels(yticklabels)
+
+    # invert axis
+    axes.invert_yaxis()
+
+    # labels
+    axes.set_ylabel(r'Pressure (hPa)')
+
+    # add colorbar title
+    if cbstring is None:
+        try:
+            cbstring = omega.units
+        except AttributeError:
+            pass
+    cb.set_label(replace_minus(cbstring))
+
+    # add plot title
+    axes.set_title(title, loc='left')
+
+    # add quivers
+    quiv = axes.quiver(lon, lev, uchi.values, omega.values,
+                       pivot='middle', units='inches',
+                       scale=800 / 25.4)
+
+    if reflabel is None:
+        reflabel = r'%d m s$^{{\mhyphen}1}$' % refvector
+
+    axes.quiverkey(quiv, 0.85, 1.05, 2, reflabel, labelpos='E',
+                   angle=180, fontproperties=dict(size=6))
+
+    # maximize plot if only one
+    if maximize == 1:
+        plt.tight_layout()
+
+        # savefig if provided name
+        save_func(save, transparent)
+
+    return axes
+
+
+def panel_walker_circulation(dlist, slist=None, wmm=180, hmm=90,
+                             save=None, transparent=False):
+    """Panels version of `plot_walker_circulation`.
+
+    Parameters
+    ----------
+    dlist: list of tuples of two of xarray.DataArray
+        For each plot we need omega and uchi, thus input should be a
+        list of tuples of (omea, uchi) in that order. All data arrays
+        must be 2 dimensional with named coordinates `longitude` and
+        `level`.  
+    slist: list of dict objects of specifications, optional
+        Each array in `dlist` must have a dictionary of options or
+        specifications in this list. See `plot_pressure_latitude` for
+        possible specifications.
+    wmm: float, optional
+        Width of the figure to plot in units of mm. Default is 180 mm.
+    hmm: float, optional
+        Height of the figure to plot in units of mm. Default is 90 mm.
+    save: bool or str, optional
+        This can be a boolean flag to create a PDF file with the
+        plotted map, in which case the file will be named
+        `output.pdf`, or a string with a specific name for the file.
+        Default is only show the plot.
+    transparent: bool, optional
+        If `save` is True or some str object with a name, this keyword
+        controls how the background is plotted. If True, then
+        background will be transparent. This is useful if the image is
+        to be used in slideshows. Default is False.
+
+    Returns
+    -------
+    matplotlib.figure.Figure object with panel plots.
+    """  # noqa
+
+    # settings
+    plot_settings()
+
+    # check number of dataset equals specifications
+    ndat = len(dlist)
+
+    if slist is not None:
+        nspc = len(slist)
+
+        if ndat != nspc:
+            msg = 'more/less specifications than datasets'
+            raise ValueError(msg)
+
+    # create plot
+    fig = plt.figure(figsize=(wmm / 25.4, hmm / 25.4))
+
+    # get better shape for these many datasets
+    nrows, ncols = _get_pshape(ndat)
+
+    # actually plot
+    for p in range(ndat):
+
+        # get data
+        omega, uchi = dlist[p]
+
+        # create axes
+        ax = plt.subplot(nrows, ncols, p + 1)
+
+        # plot
+        if slist is not None:
+            spec = slist[p]
+
+            # remove any axes specification just in case
+            try:
+                del spec['axes']
+            except KeyError:
+                pass
+
+            plot_walker_circulation(omega, uchi, axes=ax, **spec)
+        else:
+            plot_walker_circulation(omega, uchi, axes=ax)
+
+    # maximize output
+    plt.tight_layout()
+
+    # savefig if provided name
+    save_func(save, transparent)
+
+    return fig
