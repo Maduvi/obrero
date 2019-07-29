@@ -103,6 +103,7 @@ def plot_settings():
     mpl.rc('text.latex', unicode=True)
     mpl.rc('text.latex', preamble=[r'\usepackage{helvet}',
                                    r'\usepackage{sansmath}',
+                                   r'\usepackage{amsmath}',
                                    r'\usepackage{subdepth}',
                                    r'\usepackage{type1cm}',
                                    r'\usepackage{gensymb}',
@@ -1985,7 +1986,8 @@ def pcar_gridliner(axes, extent, xloc, yloc):
     axes.tick_params(axis='y', left=False)
 
 
-def plot_walker_circulation(omega, uchi, method='filled', axes=None,
+def plot_walker_circulation(omega, uchi, vectors=True,
+                            method='filled', axes=None,
                             wmm=80, hmm=80, levels=None, minv=None,
                             maxv=None, nlevels=None, cm='coolwarm',
                             extend='neither', cticks=None,
@@ -2120,8 +2122,8 @@ def plot_walker_circulation(omega, uchi, method='filled', axes=None,
         # plot filled countour with specs
         fmap = axes.contourf(lon, lev, omega.values, levels=levels,
                              cmap=cm, extend=extend)
-        cb = plt.colorbar(fmap, orientation='horizontal', pad=0.1,
-                          format=FuncFormatter(no_hyphen), shrink=0.8,
+        cb = plt.colorbar(fmap, orientation='horizontal', pad=0.15,
+                          format=FuncFormatter(no_hyphen), shrink=1,
                           ax=axes, ticks=cticks)
     elif method == 'mesh':
         # fix coords
@@ -2132,8 +2134,8 @@ def plot_walker_circulation(omega, uchi, method='filled', axes=None,
         cnorm = BoundaryNorm(levels, cmap.N)
         fmap = axes.pcolormesh(corlon, corlev, omega.values,
                                cmap=cmap, norm=cnorm)
-        cb = plt.colorbar(fmap, orientation='horizontal', pad=0.1,
-                          format=FuncFormatter(no_hyphen), shrink=0.8,
+        cb = plt.colorbar(fmap, orientation='horizontal', pad=0.15,
+                          format=FuncFormatter(no_hyphen), shrink=1,
                           ax=axes, extend=extend, ticks=cticks)
     elif method == 'none':
         pass
@@ -2174,15 +2176,16 @@ def plot_walker_circulation(omega, uchi, method='filled', axes=None,
     axes.set_title(title, loc='left')
 
     # add quivers
-    quiv = axes.quiver(lon, lev, uchi.values, omega.values,
-                       pivot='middle', units='inches',
-                       scale=800 / 25.4)
+    if vectors is True:
+        quiv = axes.quiver(lon, lev, uchi.values, omega.values,
+                           pivot='middle', units='inches',
+                           scale=1200 / 25.4)
 
-    if reflabel is None:
-        reflabel = r'%d m s$^{{\mhyphen}1}$' % refvector
+        if reflabel is None:
+            reflabel = r'%d m s$^{{\mhyphen}1}$' % refvector
 
-    axes.quiverkey(quiv, 0.85, 1.05, 2, reflabel, labelpos='E',
-                   angle=180, fontproperties=dict(size=6))
+        axes.quiverkey(quiv, 0.75, 1.1, 2, reflabel, labelpos='E',
+                       angle=180, fontproperties=dict(size=6))
 
     # maximize plot if only one
     if maximize == 1:
