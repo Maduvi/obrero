@@ -7,6 +7,8 @@ import xarray as xr
 import matplotlib
 from matplotlib.lines import Line2D
 
+from .plasim_t21 import COORD_REGION, REG_MARK
+
 from obrero import io
 from obrero import analysis
 from obrero import utils
@@ -132,13 +134,15 @@ def mcwd_composite_map(mcwd_exp, map_exp, mcwd_ctl, map_ctl,
         for j in range(mlon):
             c = comp[i, j]
             if not np.isnan(c):
-                x.append(lon[j])
-                y.append(lat[i])
-                p1.append(pr_ctl.values[i, j])
-                p2.append(pr_exp.values[i, j])
-                w1.append(wd_ctl.values[i, j])
-                w2.append(wd_exp.values[i, j])
-                cm.append(c)
+                # ignore antarctica
+                if lat[i] > -60.0:
+                    x.append(lon[j])
+                    y.append(lat[i])
+                    p1.append(pr_ctl.values[i, j])
+                    p2.append(pr_exp.values[i, j])
+                    w1.append(wd_ctl.values[i, j])
+                    w2.append(wd_exp.values[i, j])
+                    cm.append(c)
 
     # create data dictionary
     data = dict(lon=x, lat=y, ctl_map=p1, exp_map=p2, ctl_mcwd=w1,
@@ -553,8 +557,8 @@ def plot_mcwd_composite(composite, wmm=100, hmm=80, axes=None,
     corlon, corlat = oplot.corner_coords(clon, lat)
 
     # plot map
-    fmap = axes.pcolormesh(corlon, corlat, cval, cmap=cmap,
-                           norm=cnorm, transform=oplot.pcar())
+    fmap = axes.pcolor(corlon, corlat, cval, cmap=cmap,
+                       norm=cnorm, transform=oplot.pcar())
 
     # add colorbar
     cb = oplot.plt.colorbar(fmap, orientation='horizontal', pad=0.15,
@@ -689,10 +693,10 @@ def plot_malhi(table_data, wmm=90, hmm=90, names=['CTL', 'EXP'],
              '3.5': cmap[3], '4.5': cmap[4], '5.5': cmap[5]}
 
     # custom legend lines
-    custom_names = ['Distance to ' + names[0], names[1]]
-    custom_lines = [Line2D([0], [0], color='black', lw=1),
-                    Line2D([0], [0], linestyle='',
-                           marker='^', color='black')]
+    regions = []
+    markers = []
+    custom_names = ['Distance to ' + names[0]]
+    custom_lines = [Line2D([0], [0], color='black', lw=0.5, alpha=0.5)]
 
     # to guess xlim later
     xplotted = []
@@ -701,6 +705,17 @@ def plot_malhi(table_data, wmm=90, hmm=90, names=['CTL', 'EXP'],
         row = table.loc[i]
         lat = row.lat
         lon = row.lon
+
+        # get marker based on region
+        key = '(%8.5f, %g)' % (lat, lon)
+        reg = COORD_REGION[key]
+        mark = REG_MARK[reg]
+
+        if reg not in regions:
+            regions.append(reg)
+
+        if mark not in markers:
+            markers.append(mark)
 
         # fix lon to be -180 - 180
         if lon > 180:
@@ -726,8 +741,8 @@ def plot_malhi(table_data, wmm=90, hmm=90, names=['CTL', 'EXP'],
 
                     xplotted.extend(x)
         else:
-            axes.plot(x, y, color=c)
-            axes.plot(row.exp_mcwd, row.exp_map, '^', color=c)
+            axes.plot(x, y, color=c, linewidth=0.5, alpha=0.5)
+            axes.plot(row.exp_mcwd, row.exp_map, mark, color=c, ms=2)
             xplotted.extend(x)
 
     # guess min xlim
@@ -739,12 +754,20 @@ def plot_malhi(table_data, wmm=90, hmm=90, names=['CTL', 'EXP'],
 
     # plot settings
     axes.set_xlabel(xlabel)
-    axes.set_ylabel(ylabel)
+    axes.set_ylabel(oplot.replace_minus(ylabel))
     axes.set_ylim(ylim)
     axes.set_title(title)
+    axes.xaxis.set_major_formatter(oplot.FuncFormatter(oplot.no_hyphen))
 
     if legend is True:
-        axes.legend(custom_lines, custom_names, loc=2)
+
+        for r in regions:
+            custom_names.append(r)
+
+        for m in markers:
+            custom_lines.append(Line2D([0], [0], linestyle='',
+                                       marker=m, color='black', ms=2))
+        axes.legend(custom_lines, custom_names, loc=2, ncol=3, fontsize=6)
 
     # maximize plot if only one
     if maximize == 1:
