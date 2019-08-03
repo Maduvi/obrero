@@ -7,13 +7,13 @@ import xarray as xr
 import matplotlib
 from matplotlib.lines import Line2D
 
-from .plasim_t21 import COORD_REGION, REG_MARK
+from .plasim_t21 import COORD_REGION1, REG_MARK1
+from .plasim_t21 import COORD_REGION2, REG_MARK2
 
 from obrero import io
 from obrero import analysis
 from obrero import utils
 from obrero import plot as oplot
-
 
 def mcwd_composite_map(mcwd_exp, map_exp, mcwd_ctl, map_ctl,
                        save=None, save_table=None):
@@ -536,7 +536,7 @@ def plot_mcwd_composite(composite, wmm=100, hmm=80, axes=None,
     #                              'Yellow', 'YellowGreen', 'DarkGreen'])
     cmap_base = matplotlib.cm.get_cmap('BrBG')
     cmap = oplot.ListedColormap([cmap_base(x) for x
-                                 in [0., 0.2, 0.32, 0.67, 0.8, 1.]])
+                                 in [0., 0.2, 0.28, 0.38, 0.8, 1.]])
 
     # levels
     lev = range(7)
@@ -688,7 +688,7 @@ def plot_malhi(table_data, wmm=90, hmm=90, names=['CTL', 'EXP'],
 
     # colors dictionary
     cmap_base = matplotlib.cm.get_cmap('BrBG')
-    cmap = [cmap_base(x) for x in [0., 0.2, 0.32, 0.67, 0.8, 1.]]
+    cmap = [cmap_base(x) for x in [0., 0.2, 0.28, 0.38, 0.8, 1.]]
     cdict = {'0.5': cmap[0], '1.5': cmap[1], '2.5': cmap[2],
              '3.5': cmap[3], '4.5': cmap[4], '5.5': cmap[5]}
 
@@ -708,8 +708,8 @@ def plot_malhi(table_data, wmm=90, hmm=90, names=['CTL', 'EXP'],
 
         # get marker based on region
         key = '(%8.5f, %g)' % (lat, lon)
-        reg = COORD_REGION[key]
-        mark = REG_MARK[reg]
+        reg = COORD_REGION1[key]
+        mark = REG_MARK1[reg]
 
         if reg not in regions:
             regions.append(reg)
@@ -779,25 +779,21 @@ def plot_malhi(table_data, wmm=90, hmm=90, names=['CTL', 'EXP'],
     return axes
 
 
-def panel_plot_malhi(table_data, wmm=180, hmm=180, names=['CTL', 'EXP'],
+def panel_plot_malhi(table_data, wmm=180, hmm=120, names=['CTL', 'EXP'],
                      save=None, transparent=False):
     """Panels version of `plot_malhi`. 
 
-    Here we separate continents with rectangular bounds. Some
-    gridpoints might be left out, but the overall regional pattern is
-    what we want to see. Here we define squared regions:
+    Here we separate several regions we have defined in COORD_REGION2
+    within the plasim_t21.py module.
 
-        REGION                        BOUNDS
-        --------------------------------------------------
-        Central America (CAM):         [-100, -80, 10, 25]
-        Northern South America (NSAM): [-90, -30, -25, 10]
-        Southern South America (SSAM): [-90, -30, -90, -25]
-        North America (NAM):           [-180, -50, 30, 90]
-        Europe (EUR):                  [-15, 40, 30, 90]
-        Asia (ASI):                    [40, 150, 20, 90]
-        West Africa (WAFR):            [-20, 10, 0, 30]
-        Southern Africa (SAFR):        [15, 50, -30, 0]
-        Oceania (OCE):                 [100, 160, -45, 5]
+        REGION  LOCATION
+        ----------------------------------------------
+        R1: North America
+        R2: Central America and Northern South America
+        R3: Central South America (Amazonia)
+        R4: Eurasia
+        R5: East Africa
+        R6: Australia
 
     Parameters
     ----------
@@ -811,51 +807,120 @@ def panel_plot_malhi(table_data, wmm=180, hmm=180, names=['CTL', 'EXP'],
     # settings
     oplot.plot_settings()
 
-    # bounds
-    cam = [-100, -80, 10, 25]
-    nsam = [-90, -30, -25, 10]
-    ssam = [-90, -30, -90, -25]
-    nam = [-180, -50, 30, 90]
-    eur = [-15, 40, 30, 90]
-    asi = [40, 150, 20, 90]
-    wafr = [-20, 10, 0, 30]
-    safr = [15, 50, -30, 0]
-    oce = [100, 160, -45, 5]
+    # check if df or text file
+    if isinstance(table_data, str):
+        table = pd.read_csv(table_data, index_col=0)
+    elif isinstance(table_data, pd.core.frame.DataFrame):
+        table = table_data
 
+    # check it was the output from composite_map
+    colnames = ['lon', 'lat', 'ctl_map', 'exp_map', 'ctl_mcwd',
+                'exp_mcwd', 'comp']
+    for x in colnames:
+        if x in table.columns:
+            pass
+        else:
+            msg = 'table missing \'' + x + '\' column'
+            raise ValueError(msg)
+
+    nrows = table.index.size
+
+    # colors dictionary
+    cmap_base = matplotlib.cm.get_cmap('BrBG')
+    cmap = [cmap_base(x) for x in [0., 0.2, 0.28, 0.38, 0.8, 1.]]    
+    cnorm = oplot.BoundaryNorm(range(7), ncolors=6, clip=True)
+    cdict = {'0.5': cmap[0], '1.5': cmap[1], '2.5': cmap[2],
+             '3.5': cmap[3], '4.5': cmap[4], '5.5': cmap[5]}
+    
     # create figure
     fig = oplot.plt.figure(figsize=(wmm / 25.4, hmm / 25.4))
 
     # create axes for continents
-    axes = fig.subplots(3, 3, sharey=True)
+    axes = fig.subplots(2, 3, sharey=True)
 
-    # plots
-    plot_malhi(table_data, names=names, bounds=cam,
-               title='Central America', axes=axes[0, 0],
-               legend=True, xlabel='')
-    plot_malhi(table_data, names=names, bounds=nsam,
-               title='Northern South America', axes=axes[0, 1],
-               legend=False, ylabel='', xlabel='', )
-    plot_malhi(table_data, names=names, bounds=ssam,
-               title='Southern South America', axes=axes[0, 2],
-               legend=False, ylabel='', xlabel='')
-    plot_malhi(table_data, names=names, bounds=nam,
-               title='North America', axes=axes[1, 0],
-               legend=True, xlabel='')
-    plot_malhi(table_data, names=names, bounds=eur,
-               title='Europe', axes=axes[1, 1],
-               legend=False, ylabel='', xlabel='')
-    plot_malhi(table_data, names=names, bounds=asi,
-               title='Asia', axes=axes[1, 2],
-               legend=False, ylabel='', xlabel='')
-    plot_malhi(table_data, names=names, bounds=wafr,
-               title='West Africa', axes=axes[2, 0],
-               legend=True)
-    plot_malhi(table_data, names=names, bounds=safr,
-               title='Southern Africa', axes=axes[2, 1],
-               legend=False, ylabel='')
-    plot_malhi(table_data, names=names, bounds=oce,
-               title='Oceania', axes=axes[2, 2],
-               legend=False, ylabel='')
+    # to guess xlim later
+    xp1, xp2, xp3, xp4, xp5, xp6 = [], [], [], [], [], []
+
+    for i in range(nrows):
+        row = table.loc[i]
+        lat = row.lat
+        lon = row.lon
+
+        # get marker based on region
+        key = '(%8.5f, %g)' % (lat, lon)
+        reg = COORD_REGION2[key]
+        mark = REG_MARK2[reg]
+
+        x = [row.ctl_mcwd, row.exp_mcwd]
+        y = [row.ctl_map, row.exp_map]
+        c = cdict[str(row.comp)]
+
+        if reg == 'R1':
+            axes[0, 0].plot(x, y, color=c, linewidth=1, alpha=0.5)
+            axes[0, 0].plot(x[1], y[1], mark, color=c, ms=2)
+            xp1.extend(x)
+        elif reg == 'R2':
+            axes[0, 1].plot(x, y, color=c, linewidth=1, alpha=0.5)
+            axes[0, 1].plot(x[1], y[1], mark, color=c, ms=2)
+            xp2.extend(x)
+        elif reg == 'R3':
+            axes[0, 2].plot(x, y, color=c, linewidth=1, alpha=0.5)
+            axes[0, 2].plot(x[1], y[1], mark, color=c, ms=2)
+            xp3.extend(x)
+        elif reg == 'R4':
+            axes[1, 0].plot(x, y, color=c, linewidth=1, alpha=0.5)
+            axes[1, 0].plot(x[1], y[1], mark, color=c, ms=2)
+            xp4.extend(x)
+        elif reg == 'R5':
+            axes[1, 1].plot(x, y, color=c, linewidth=1, alpha=0.5)
+            axes[1, 1].plot(x[1], y[1], mark, color=c, ms=2)
+            xp5.extend(x)
+        elif reg == 'R6':
+            axes[1, 2].plot(x, y, color=c, linewidth=1, alpha=0.5)
+            axes[1, 2].plot(x[1], y[1], mark, color=c, ms=2)
+            xp6.extend(x)
+        else:
+            pass
+            
+    # plot settings
+    for ax in axes[1, :]:
+        ax.set_xlabel('MCWD (mm)')
+        
+    for ax in axes[:, 0]:
+        ax.set_ylabel(oplot.replace_minus('MAP (mm year$^{-1}$)'))
+
+    # ylim and change hyphen
+    for ax in axes.flatten():
+        ax.set_ylim([0, 3500])
+        ax.xaxis.set_major_formatter(oplot.FuncFormatter(oplot.no_hyphen))
+
+    # fix xlim
+    for (x, ax) in zip([xp1, xp2, xp3, xp4, xp5, xp6], axes.flatten()):
+        positive_minx = abs(min(x))
+        positive_minx -= positive_minx % -100
+        xlim = [-positive_minx, 0]
+        ax.set_xlim(xlim)
+
+    # titles
+    axes[0, 0].set_title('(a) North America')
+    axes[0, 1].set_title('(b) Central America/Northern South America')
+    axes[0, 2].set_title('(c) Central South America')
+    axes[1, 0].set_title('(d) Eurasia')
+    axes[1, 1].set_title('(e) South East Africa')
+    axes[1, 2].set_title('(f) Australia')
+
+    # legend
+    custom_names = ['Distance to ' + names[0], names[1]]
+    custom_lines = [Line2D([0], [0], color='black', lw=1,
+                           alpha=0.5),
+                    Line2D([0], [0], linestyle='',
+                           marker='^', color='black', ms=2)]
+    axes[0, 0].legend(custom_lines, custom_names, loc=2, fontsize=6)
+    axes[0, 1].legend(custom_lines, custom_names, loc=4, fontsize=6)
+    axes[0, 2].legend(custom_lines, custom_names, loc=4, fontsize=6)
+    axes[1, 0].legend(custom_lines, custom_names, loc=3, fontsize=6)
+    axes[1, 1].legend(custom_lines, custom_names, loc=2, fontsize=6)
+    axes[1, 2].legend(custom_lines, custom_names, loc=2, fontsize=6)
 
     # maximize
     oplot.plt.tight_layout()
@@ -864,3 +929,89 @@ def panel_plot_malhi(table_data, wmm=180, hmm=180, names=['CTL', 'EXP'],
     oplot.save_func(save, transparent)
 
     return fig
+
+def plot_regions(composite, bnds, regname, xloc, yloc, wmm=30, hmm=30,
+                 axes=None, proj=None, lon0=0, save=None,
+                 transparent=False):
+    
+    # plot settings
+    oplot.plot_settings()
+
+    # copy data
+    compcopy = composite.copy()
+
+    # select region
+    x0, x1, y0, y1 = bnds
+    reg = compcopy.sel(latitude=slice(y0, y1),
+                       longitude=slice(x0, x1))
+
+    # get coords
+    lon = reg.longitude.values
+    lat = reg.latitude.values
+
+    # shape
+    nlat, mlon = reg.shape
+    
+    for i in range(nlat):
+        ii = lat[i]
+        for j in range(mlon):
+            jj = lon[j]
+            
+            # get marker based on region
+            key = '(%8.5f, %g)' % (ii, jj)
+
+            try:
+                region = COORD_REGION2[key]
+            except:
+                region = 'OTHER'
+
+            if region != regname:
+                reg.values[i, j] = np.nan
+
+    # get projection if none given
+    if proj is None:
+        proj = oplot.pcar(central_longitude=lon0)
+
+        # in case we plot a single plot
+    if axes is None:
+        oplot.plt.figure(figsize=(wmm / 25.4, hmm / 25.4))
+        axes = oplot.plt.axes(projection=proj)
+        maximize = 1
+    else:
+        maximize = 0
+
+    # colormap
+    cmap_base = matplotlib.cm.get_cmap('BrBG')
+    cmap = oplot.ListedColormap([cmap_base(x) for x
+                                 in [0., 0.2, 0.28, 0.38, 0.8, 1.]])
+
+    # levels
+    lev = range(7)
+
+    # normalize to number of colors
+    cnorm = oplot.BoundaryNorm(lev, ncolors=cmap.N, clip=True)
+
+    # add shorelines
+    axes.coastlines(resolution='110m')
+
+    # set global
+    axes.set_extent(bnds)
+
+    # add gridlines
+    oplot.pcar_gridliner(axes, bnds, xloc, yloc)
+
+    # fix coords
+    corlon, corlat = oplot.corner_coords(lon, lat)
+
+    # plot map
+    fmap = axes.pcolor(corlon, corlat, reg.values, cmap=cmap,
+                       norm=cnorm, transform=oplot.pcar())
+
+    # maximize if only one
+    if maximize == 1:
+        oplot.plt.tight_layout()
+
+        # savefig if provided name
+        oplot.save_func(save, transparent)
+
+    return axes
