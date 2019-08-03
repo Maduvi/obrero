@@ -285,7 +285,7 @@ def add_climatology(data, clim):
 
 def get_significant_diff(adata, bdata, alpha=0.05, eqvar=True,
                          fill_value=np.nan, diff=True,
-                         means_too=False):
+                         means_too=False, dim='time'):
     """Perform a student's t-test (or Welch's if eqvar = False) to
     test the hypothesis:
 
@@ -327,6 +327,9 @@ def get_significant_diff(adata, bdata, alpha=0.05, eqvar=True,
         Whether to output a tuple with both means as well:
        (differences, adata mean, bdata mean). Default is False, so
         only differences array is the output.
+    dim: str, optional
+        Dimension along which to perform operation. Default is to look
+        for dimension 'time'.
     
     Returns
     -------
@@ -351,8 +354,8 @@ def get_significant_diff(adata, bdata, alpha=0.05, eqvar=True,
         raise ValueError(msg)
 
     # first get means difference
-    amean = adata.mean(dim='time', keep_attrs=True)
-    bmean = bdata.mean(dim='time', keep_attrs=True)
+    amean = adata.mean(dim=dim, keep_attrs=True)
+    bmean = bdata.mean(dim=dim, keep_attrs=True)
     difference = np.array(amean.values) - np.array(bmean.values)
 
     # test statistical significance of differences
