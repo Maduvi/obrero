@@ -1119,7 +1119,15 @@ def oni_lineplot(data, names=None, colors=None, styles=None,
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    plt.legend(names)
+
+    # add legend with columns
+    if ndata > 3 and ndata < 5:
+        ncol = 2
+    elif ndata > 5:
+        ncol = 3
+    else:
+        ncol = 1
+    plt.legend(names, ncol=ncol)
 
     # set xlims
     if xlim == []:
