@@ -996,7 +996,7 @@ def oni_lineplot(data, names=None, colors=None, styles=None,
                  wmm=175, hmm=70, cm='jet', dpi=300,
                  xlabel='Year', ylabel=r'($^{\circ}$C)',
                  title=r'Oceanic Niño Index', ylim=[-2.5, 2.5],
-                 axes=None, save=None, transparent=False):
+                 xlim=[], axes=None, save=None, transparent=False):
     """Plot lines from ONI data frames.
 
     xy-plot with lines where the x axis is the year and the y axis is
@@ -1039,6 +1039,9 @@ def oni_lineplot(data, names=None, colors=None, styles=None,
     ylim: list, optional
         List object with two float values to define the limits in the
         y axis. Default is [-2.5, 2.5].
+    xlim: list, optional
+        List object with two float values to define the limits in the
+        x axis. Default is [min(date), max(date)].
     axes: matplotlib.axes.Axes, optional
         If this is going to be part of another bigger figure, a
         subplot axes can be provided for this plot to attach the ONI
@@ -1118,6 +1121,11 @@ def oni_lineplot(data, names=None, colors=None, styles=None,
     plt.ylabel(ylabel)
     plt.legend(names)
 
+    # set xlims
+    if xlim == []:
+        xlim = [dates[0], dates[-1]]
+    plt.xlim(xlim)
+        
     # set ylims
     plt.ylim(ylim)
 
