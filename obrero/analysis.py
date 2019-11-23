@@ -132,7 +132,7 @@ def get_season_means(data, calendar='360_day'):
 
     # season means
     seagr = (data * wgt).groupby('time.season')
-    smean = seagr.sum(dim='time', keep_attrs=True)
+    smean = seagr.sum(dim='time', keep_attrs=True, skipna=False)
 
     return smean
 
@@ -185,7 +185,7 @@ def get_season_series(data, calendar='360_day', season=None):
 
     # get season series
     seagr = (data * wgt).groupby('tstamp')
-    series = seagr.sum(dim='time', keep_attrs=True)
+    series = seagr.sum(dim='time', keep_attrs=True, skipna=False)
 
     # rename season to time for compatibility
     series = series.rename({'tstamp': 'time'})
@@ -623,3 +623,30 @@ def ncl_zonal_mpsi(v, ps, p):
     xarr.attrs['units'] = 'kg s-1'
 
     return xarr
+
+
+def get_ymean(data):
+    """
+    First we group all values by year average them.
+
+    Parameters
+    ----------
+    data: xarray.DataArray or xarray.Dataset
+        Input must have a `time` coordinate and must be an xarray
+        object.
+
+    Returns
+    -------
+    xarray.DataArray or xarray.Dataset which contains as many time
+    step as there are years in data. We do not keep actual dates in
+    the time index.
+    """  # noqa
+
+    # compute mean grouping by year
+    ygr = data.groupby('time.year')
+    ymean = ygr.mean(dim='time', keep_attrs=True)
+
+    # rename month coordinate to time for compatibility
+    ymean = ymean.rename({'year': 'time'})
+
+    return ymean
