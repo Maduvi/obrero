@@ -992,9 +992,9 @@ def ortho_rotation(data, spec, wpx=1920, hpx=1080, lon0=0, dg=1,
                 lon0 = 360.0
 
 
-def oni_lineplot(data, names=None, colors=None, styles=None,
-                 wmm=175, hmm=70, cm='jet', dpi=300,
-                 xlabel='Year', ylabel=r'($^{\circ}$C)',
+def oni_lineplot(data, names=None, colors=None, styles=None, lw=1,
+                 wmm=175, hmm=70, cm='jet', dpi=300, ncol=4,
+                 xlabel='Year', ylabel=r'($^{\circ}$C)', lwaux=1,
                  title=r'Oceanic Niño Index', ylim=[-2.5, 2.5],
                  xlim=[], axes=None, save=None, transparent=False):
     """Plot lines from ONI data frames.
@@ -1105,15 +1105,15 @@ def oni_lineplot(data, names=None, colors=None, styles=None,
     if ndata > 1:
         for i in range(ndata):
             y = data[i].values.flatten()
-            plt.plot(dates, y, styles[0], color=colors[i])
+            plt.plot(dates, y, styles[0], color=colors[i], linewidth=lw)
     else:
         y = data.values.flatten()
-        plt.plot(dates, y, styles[0], color=colors[0])
+        plt.plot(dates, y, styles[0], color=colors[0], linewidth=lw)
 
     # add horizontal lines
-    plt.axhline(y=0, linestyle='-', color='gray')
-    plt.axhline(y=0.5, linestyle='--', color='r')
-    plt.axhline(y=-0.5, linestyle='--', color='b')
+    plt.axhline(y=0, linestyle='-', color='gray', linewidth=0.75)
+    plt.axhline(y=0.5, linestyle=':', color='r', linewidth=lwaux)
+    plt.axhline(y=-0.5, linestyle=':', color='b', linewidth=lwaux)
 
     # add titling
     plt.title(title)
@@ -1121,12 +1121,6 @@ def oni_lineplot(data, names=None, colors=None, styles=None,
     plt.ylabel(ylabel)
 
     # add legend with columns
-    if ndata <= 4:
-        ncol = 2
-    elif ndata > 4 and ndata < 6:
-        ncol = 3
-    else:
-        ncol = 4
     plt.legend(names, ncol=ncol)
 
     # set xlims
