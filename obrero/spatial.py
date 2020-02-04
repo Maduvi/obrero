@@ -51,7 +51,7 @@ def get_rectreg(data, bounds):
     return reg
 
 
-def shift180(lon):
+def coord_shift180(lon):
     """Enforce coordinate longiude to range from -180 to 180.
 
     Sometimes longitudes are 0-360. This simple function will subtract
@@ -344,3 +344,26 @@ def area_weights(data):
     latweights = np.sum(weights, axis=1)
 
     return latweights
+
+
+def dashift180(dataarray):
+    """
+    Shift data array to -180,180 longitude when it comes in 0-360 flavour.
+    """
+
+    # get hemispheres
+    right = dataarray.sel(longitude=slice(0, 180))
+    left = dataarray.sel(longitude=slice(181, 360))
+
+    # get longitude coordinate and shift it
+    lon = dataarray.longitude.values
+    shift = coord_shift180(lon)
+    slon = np.concatenate([shift[shift < 0], shift[shift >= 0]])
+
+    # change coordinate
+    dataarray.longitude.values = slon
+
+    # join hemispheres
+    dataarray = xr.concat([left, right], dim='longitude')
+
+    return dataarray
