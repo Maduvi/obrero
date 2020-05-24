@@ -25,7 +25,7 @@ Basic modules include input/output functions, calendar related, spatial and time
 - **MCWD**: in our studies we use a similar approach to Aragao et al. (2007) and Malhi et al. (2009), so this module is ready to compute MCWD. It also plots changes in MCWD and mean annual precipitation (MAP) and has a unique composite map that we have described in Duque et al. (2019).
 
 ## Tests
-There is a very small and limited test suite in this package. It is barely a suite and it barely tests anything. It is more of a learning excercise.
+There is a very small and limited test suite in this package. It is barely a suite and it barely tests anything. It is more of a learning exercise.
 
 ## Data
 This little package comes with two non-Python files. The first is an ASCII file with anomalies of SST in the Niño 3.4 region available online [here](https://origin.cpc.ncep.noaa.gov/products/analysis_monitoring/ensostuff/detrend.nino34.ascii.txt). But also there is an image file that is the logo of the university where we work. It is available online [here](https://upload.wikimedia.org/wikipedia/commons/f/fb/Escudo-UdeA.svg).
